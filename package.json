@@ -1,0 +1,24 @@
+{
+  "name": "validator-neuro-dwi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cd test && ./test.sh",
+    "run": "run.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soichih/validator-neuro-dwi.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/soichih/validator-neuro-dwi/issues"
+  },
+  "homepage": "https://github.com/soichih/validator-neuro-dwi#readme"
+}
