@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import os
 import json
@@ -32,7 +32,7 @@ with open('config.json') as config_json:
 results = {"errors": [], "warnings": []}
 
 #TODO - how should I keep up wit this path?
-mrinfo="/N/soft/rhel6/mrtrix/0.3.15/mrtrix3/release/bin/mrinfo"
+#mrinfo="/N/soft/rhel6/mrtrix/0.3.15/mrtrix3/release/bin/mrinfo"
 
 directions = None
 
@@ -40,13 +40,13 @@ if config['dwi'] is None:
     results['errors'].append("dwi not set")
 else:
     try: 
-        print "running dwi mrinfo"
-        info = subprocess.check_output([mrinfo, config['dwi']], shell=False)
+        print("running dwi mrinfo")
+        info = subprocess.check_output(["mrinfo", config['dwi']], shell=False)
         results['detail'] = info
-        info_lines = info.split("\n")
+        info_lines = info.split('\n')
 
         #check dimentions
-        dim=info_lines[3]
+        dim=info_lines[4]
         dims=dim.split("x")
         if len(dims) != 4:
             results['errors'].append("DWI file specified doesn't have 4 dimentions")
@@ -56,7 +56,7 @@ else:
                 results['errors'].append("DWI's 4D seems too small",directions)
 
         #check transform
-        tl = info_lines[9:12]
+        tl = info_lines[-5:-1] #grab last 4 lines (minus very last which is newline)
         tl[0] = tl[0][12:] #remove "Transform:"
         m = []
         for line in tl:
@@ -96,7 +96,7 @@ else:
             results['errors'].append("bvecs should have 3 rows but it has "+str(len(bvecs_rows)))
 
     except IOError:
-        print "failed to load bvecs:"+config['bvecs']
+        print("failed to load bvecs:"+config['bvecs'])
         results['errors'].append("Couldn't read bvecs")
 
 #load bvals (and check cols)
@@ -126,7 +126,7 @@ else:
             results['tags'] = ["single_shell"]
 
     except IOError:
-        print "failed to load bvals:"+config['bvals']
+        print("failed to load bvals:"+config['bvals'])
         results['errors'].append("Couldn't read bvals")
 
 with open("products.json", "w") as fp:
