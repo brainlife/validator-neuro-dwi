@@ -7,12 +7,6 @@ import subprocess
 
 # Things that this script checks
 # 
-# (for t1)
-# * make sure mrinfo runs successfully on specified t1 file
-# * make sure t1 is 3d
-# * raise warning if t1 transformation matrix isn't unit matrix (identity matrix)
-#
-# (for dwi)
 # * make sure mrinfo runs successfully on specified dwi file
 # * make sure dwi is 4d
 # * raise warning if dwi transformation matrix isn't unit matrix (identity matrix)
@@ -36,6 +30,7 @@ results = {"errors": [], "warnings": []}
 
 directions = None
 
+#check dwi
 if config['dwi'] is None: 
     results['errors'].append("dwi not set")
 else:
@@ -72,28 +67,44 @@ else:
         else:
             results['warnings'].append("DWI has non-optimal transformation matrix. It should be 1 0 0 / 0 1 0 / 0 0 1")
         
+        #TODO - normalize (for now, let's just symlink)
+        os.symlink(config['dwi'], "dwi.nii.gz")
+        
     except subprocess.CalledProcessError as err:
         results['errors'].append("mrinfo failed on dwi. error code: "+str(err.returncode))
+
+def readb(name):
+    #read bvecs
+    b = open(name)
+    rows = b.readlines()
+    normalized = [];
+    for row in rows:
+        row = row.strip().replace(",", " ").replace("\t", " ") #make it space delimited
+        row = re.sub(' +', ' ', row) #remove double spaces
+        normalized.append(row.split(' '))
+    b.close()
+    return normalized
 
 #load bvecs (and check size)
 if config['bvecs'] is None: 
     results['errors'].append("bvecs not set")
 else:
     try: 
-        bvecs = open(config['bvecs'])
-        bvecs_rows = bvecs.readlines()
-        bvecs_cols = bvecs_rows[0].strip().replace(",", " ")
-
-        #remove double spaces
-        bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols) 
-        bvecs_cols = bvecs_cols_clean.split(' ')		
+        bvecs = readb(config['bvecs'])
+        bvecs_cols = bvecs[0]
 
         if directions:
             if directions != len(bvecs_cols):
                 results['errors'].append("bvecs column count which is "+str(len(bvecs_cols))+" doesn't match dwi's 4d number:"+str(directions))
 
-        if len(bvecs_rows) != 3:
-            results['errors'].append("bvecs should have 3 rows but it has "+str(len(bvecs_rows)))
+        if len(bvecs) != 3:
+            results['errors'].append("bvecs should have 3 rows but it has "+str(len(bvecs)))
+
+        #write out normalized bvecs (write in FSL format - space delimited)
+        f = open('dwi.bvecs', 'w')
+        for row in bvecs:
+            f.write(" ".join(row))
+            f.write("\n")
 
     except IOError:
         print("failed to load bvecs:"+config['bvecs'])
@@ -104,26 +115,40 @@ if config['bvals'] is None:
     results['errors'].append("bvals not set")
 else:
     try: 
-        bvals = open(config['bvals'])
-        bvals_rows = bvals.readlines()
-        bvals_cols = bvals_rows[0].strip().replace(",", " ")
-
-        #remove double spaces
-        bvals_cols_clean = re.sub(' +', ' ', bvals_cols) 
-        bvals_cols = bvals_cols_clean.split(" ") 
+        bvals = readb(config['bvals'])
+        bvals_cols = bvals[0]
 
         if directions:
             if directions != len(bvals_cols):
                 results['errors'].append("bvals column count which is "+str(len(bvals_cols))+" doesn't match dwi's 4d number:"+str(directions))
 
-        if len(bvals_rows) != 1:
-            results['errors'].append("bvals should have 1 row but it has "+str(len(bvals_rows)))
+        if len(bvals) != 1:
+            results['errors'].append("bvals should have 1 row but it has "+str(len(bvals)))
+
+        results['datatype_tags'] = []
 
         #analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
-        #TODO - I think I should round bvalue?
-        results['bvalues'] = list(set(bvals_cols))
-        if len(results['bvalues']) <= 2:
-            results['tags'] = ["single_shell"]
+        results['tags'] = list(set(bvals_cols))
+        bvalues = list(set(bvals_cols))
+
+        #is normalized?
+        normalized = True
+        for bvalue in bvalues:
+            if float(bvalue) != round(float(bvalue), -2):
+                normalized = False
+        if normalized:
+            results['datatype_tags'].append("normalized")
+
+        #is single shell?
+        if len(bvalues) <= 2:
+            results['datatype_tags'].append("single_shell")
+            results['tags'] = ["b"+str(bvalues[1])];
+        
+        #write out normalized bvals (write in FSL format - space delimited)
+        f = open('dwi.bvals', 'w')
+        for row in bvals:
+            f.write(" ".join(row))
+            f.write("\n")
 
     except IOError:
         print("failed to load bvals:"+config['bvals'])

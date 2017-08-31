@@ -1,6 +1,6 @@
 {
-    "dwi": "test/dwi_data_b2000.nii.gz",
-    "bvecs": "test/dwi_data_b2000.bvecs",
-    "bvals": "test/dwi_data_b2000.bvals"
+    "dwi": "testkendra/DWI.nii.gz",
+    "bvecs": "testkendra/DWI.bvec",
+    "bvals": "testkendra/DWI.bval"
 }
 
