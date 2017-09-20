@@ -25,9 +25,6 @@ with open('config.json') as config_json:
 
 results = {"errors": [], "warnings": []}
 
-#TODO - how should I keep up wit this path?
-#mrinfo="/N/soft/rhel6/mrtrix/0.3.15/mrtrix3/release/bin/mrinfo"
-
 directions = None
 
 #check dwi
@@ -154,6 +151,10 @@ else:
         print("failed to load bvals:"+config['bvals'])
         results['errors'].append("Couldn't read bvals")
 
+#deprecated
 with open("products.json", "w") as fp:
     json.dump([results], fp)
+
+with open("product.json", "w") as fp:
+    json.dump(results, fp)
 
