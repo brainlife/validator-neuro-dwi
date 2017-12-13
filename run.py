@@ -125,7 +125,9 @@ else:
         results['datatype_tags'] = []
 
         #analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
-        results['tags'] = list(set(bvals_cols))
+        unique_bvals = list(set(bvals_cols))
+        results['tags'] = ['b'+bval for bval in unique_bvals]
+
         bvalues = list(set(bvals_cols))
 
         #is normalized?
