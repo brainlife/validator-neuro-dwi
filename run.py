@@ -126,7 +126,7 @@ else:
 
         #analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
         unique_bvals = list(set(bvals_cols))
-        results['tags'] = ['b'+bval for bval in unique_bvals]
+        #results['tags'] = ['b'+bval for bval in unique_bvals]
 
         bvalues = list(set(bvals_cols))
 
