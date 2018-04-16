@@ -17,7 +17,6 @@ import nibabel
 # * make sure bvals's cols count matches dwi's 4th dimension number
 # * make sure bvals has 1 row
 
-
 # display where this is running
 import socket
 
@@ -30,7 +29,6 @@ results = {"errors": [], "warnings": []}
 
 directions = None
 
-
 def check_affine(affine):
     if affine[0][0] != 1: results['warnings'].append("transform matrix 0.1 is not 1")
     if affine[0][1] != 0: results['warnings'].append("transform matrix 0.2 is not 0")
@@ -41,7 +39,6 @@ def check_affine(affine):
     if affine[2][0] != 0: results['warnings'].append("transform matrix 2.0 is not 0")
     if affine[2][1] != 0: results['warnings'].append("transform matrix 2.1 is not 0")
     if affine[2][2] != 1: results['warnings'].append("transform  matrix 2.2 is not 1")
-
 
 if 'dwi' in config:
     # check dwi
@@ -69,6 +66,9 @@ if 'dwi' in config:
             # check affine
             check_affine(img.header.get_base_affine())
 
+            #create symlink
+            os.symlink(config['dwi'], "dwi.nii.gz")
+
         except Exception as e:
             results['errors'].append("mrinfo failed on dwi. error code: " + str(e))
 
@@ -94,6 +94,15 @@ if 'dwi' in config:
                 # bvecs should have 3 row
                 if len(bvecs_rows) != 3:
                     results['errors'].append("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
+
+                # write out bvecs (write in FSL format - space delimited)
+                f = open('dwi.bvecs', 'w')
+                for row in bvecs_rows:
+                    row = row.strip().replace(",", " ")
+                    row_clean = re.sub(' +', ' ', row)
+                    f.write(row_clean)
+                    f.write("\n")
+                f.close();
 
             except IOError:
                 print("failed to load bvecs:" + config['bvecs'])
@@ -143,9 +152,9 @@ if 'dwi' in config:
 
                 # write out normalized bvals (write in FSL format - space delimited)
                 f = open('dwi.bvals', 'w')
-                for row in bvals:
-                    f.write(" ".join(row))
-                    f.write("\n")
+                f.write(bvals_cols_clean)
+                f.write("\n")
+                f.close()
 
             except IOError:
                 print("failed to load bvals:" + config['bvals'])
