@@ -8,7 +8,7 @@ import nibabel
 
 # Things that this script checks
 # 
-# * make sure mrinfo runs successfully on specified dwi file
+# * make sure nibabel runs successfully on specified dwi file
 # * make sure dwi is 4d
 # * raise warning if dwi transformation matrix isn't unit matrix (identity matrix)
 # * make sure bvecs and bvals can be read
@@ -40,125 +40,147 @@ def check_affine(affine):
     if affine[2][1] != 0: results['warnings'].append("transform matrix 2.1 is not 0")
     if affine[2][2] != 1: results['warnings'].append("transform  matrix 2.2 is not 1")
 
-if 'dwi' in config:
-    # check dwi
-    if config['dwi'] is None:
-        results['errors'].append("dwi not set")
+#def isInt(v):
+#    v = v.strip()
+#    return v=='0' or (v if v.find('..') > -1 else v.lstrip('-+').rstrip('0').rstrip('.')).isdigit()
+
+def isFloat(v):
+    try:     i = float(v)
+    except:  return False
+    return True
+
+def isInt(v):
+    try:     i = int(v)
+    except:  return False
+    return True
+
+if config['dwi'] is None:
+    results['errors'].append("dwi not set")
+else:
+    directions = None
+
+    print("checking dwi")
+    try:
+        img = nibabel.load(config['dwi'])
+        results['dwi_headers'] = str(img.header)
+        results['dwi_base_affine'] = str(img.header.get_base_affine())
+
+        # check dimensions
+        dims = img.header['dim'][0]
+        if dims != 4:
+            results['errors'].append("DWI should be 4D but has " + str(dims))
+
+        # check 4d size
+        directions = img.header['dim'][4]
+        if directions < 10:
+            results['warnings'].append("DWI's 4D is too small " + str(directions))
+
+        # check affine
+        check_affine(img.header.get_base_affine())
+
+        #create symlink
+        os.symlink(config['dwi'], "dwi.nii.gz")
+
+    except Exception as e:
+        results['errors'].append("nibabel failed on dwi. error code: " + str(e))
+
+    print("checking bvecs")
+    if config['bvecs'] is None:
+        results['errors'].append("bvecs not set")
     else:
-        directions = None
-
-        print("checking dwi")
         try:
-            img = nibabel.load(config['dwi'])
-            results['dwi_headers'] = str(img.header)
-            results['dwi_base_affine'] = str(img.header.get_base_affine())
+            bvecs = open(config['bvecs'])
+            bvecs_rows = bvecs.readlines()
+            bvecs_cols = bvecs_rows[0].strip().replace(",", " ")
 
-            # check dimensions
-            dims = img.header['dim'][0]
-            if dims != 4:
-                results['errors'].append("DWI should be 4D but has " + str(dims))
+            # remove double spaces
+            bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols)
+            bvecs_cols = bvecs_cols_clean.split(' ')
 
-            # check 4d size
-            directions = img.header['dim'][4]
-            if directions < 10:
-                results['warnings'].append("DWI's 4D is too small " + str(directions))
+            # bvecs should have same col num as directions
+            if directions != len(bvecs_cols):
+                results['errors'].append(
+                    "bvecs column count which is " + str(len(bvecs_cols)) + " doesn't match dwi's 4d number:" + str(
+                        directions))
 
-            # check affine
-            check_affine(img.header.get_base_affine())
+            # bvecs should have 3 row
+            if len(bvecs_rows) != 3:
+                results['errors'].append("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
 
-            #create symlink
-            os.symlink(config['dwi'], "dwi.nii.gz")
+            # write out bvecs (write in FSL format - space delimited)
+            f = open('dwi.bvecs', 'w')
+            for row in bvecs_rows:
+                row = row.strip().replace(",", " ")
+                row_clean = re.sub(' +', ' ', row)
 
-        except Exception as e:
-            results['errors'].append("mrinfo failed on dwi. error code: " + str(e))
+                f.write(row_clean)
+                f.write("\n")
 
-        print("checking bvecs")
-        if config['bvecs'] is None:
-            results['errors'].append("bvecs not set")
-        else:
-            try:
-                bvecs = open(config['bvecs'])
-                bvecs_rows = bvecs.readlines()
-                bvecs_cols = bvecs_rows[0].strip().replace(",", " ")
+                #check to make sure all values are float
+                for v in row_clean.split(' '):
+                    if not isFloat(v):
+                        results['errors'].append("bvecs contains non float:" +v)
 
-                # remove double spaces
-                bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols)
-                bvecs_cols = bvecs_cols_clean.split(' ')
+            f.close();
 
-                # bvecs should have same col num as directions
-                if directions != len(bvecs_cols):
-                    results['errors'].append(
-                        "bvecs column count which is " + str(len(bvecs_cols)) + " doesn't match dwi's 4d number:" + str(
-                            directions))
+        except IOError:
+            print("failed to load bvecs:" + config['bvecs'])
+            results['errors'].append("Couldn't read bvecs")
 
-                # bvecs should have 3 row
-                if len(bvecs_rows) != 3:
-                    results['errors'].append("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
+    print("checking bvals")
+    if config['bvals'] is None:
+        results['errors'].append("bvals not set")
+    else:
+        try:
+            bvals = open(config['bvals'])
+            bvals_rows = bvals.readlines()
+            bvals_cols = bvals_rows[0].strip().replace(",", " ")
 
-                # write out bvecs (write in FSL format - space delimited)
-                f = open('dwi.bvecs', 'w')
-                for row in bvecs_rows:
-                    row = row.strip().replace(",", " ")
-                    row_clean = re.sub(' +', ' ', row)
-                    f.write(row_clean)
-                    f.write("\n")
-                f.close();
+            # remove double spaces
+            bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
+            bvals_cols = bvals_cols_clean.split(" ")
 
-            except IOError:
-                print("failed to load bvecs:" + config['bvecs'])
-                results['errors'].append("Couldn't read bvecs")
+            if directions != len(bvals_cols):
+                results['errors'].append(
+                    "bvals column count which is " + str(len(bvals_cols)) + " doesn't match dwi's 4d number:" + str(
+                        directions))
 
-        print("checking bvals")
-        if config['bvals'] is None:
-            results['errors'].append("bvals not set")
-        else:
-            try:
-                bvals = open(config['bvals'])
-                bvals_rows = bvals.readlines()
-                bvals_cols = bvals_rows[0].strip().replace(",", " ")
+            if len(bvals_rows) != 1:
+                results['errors'].append("bvals should have 1 row but it has " + str(len(bvals_rows)))
 
-                # remove double spaces
-                bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
-                bvals_cols = bvals_cols_clean.split(" ")
+            results['datatype_tags'] = []
 
-                if directions != len(bvals_cols):
-                    results['errors'].append(
-                        "bvals column count which is " + str(len(bvals_cols)) + " doesn't match dwi's 4d number:" + str(
-                            directions))
+            # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
+            unique_bvals = list(set(bvals_cols))
+            # results['tags'] = ['b'+bval for bval in unique_bvals]
 
-                if len(bvals_rows) != 1:
-                    results['errors'].append("bvals should have 1 row but it has " + str(len(bvals_rows)))
+            bvalues = list(set(bvals_cols))
 
-                results['datatype_tags'] = []
-
-                # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
-                unique_bvals = list(set(bvals_cols))
-                # results['tags'] = ['b'+bval for bval in unique_bvals]
-
-                bvalues = list(set(bvals_cols))
-
-                # is normalized?
-                normalized = True
-                for bvalue in bvalues:
+            # is normalized?
+            normalized = True
+            for bvalue in bvalues:
+                if not isInt(bvalue):
+                    results['errors'].append("bvals contains non int:" +v)
+                else:
                     if float(bvalue) != round(float(bvalue), -2):
                         normalized = False
-                if normalized:
-                    results['datatype_tags'].append("normalized")
+            if normalized:
+                results['datatype_tags'].append("normalized")
 
-                # is single shell?
-                if len(bvalues) <= 2:
-                    results['datatype_tags'].append("single_shell")
-                    results['tags'] = ["b" + str(bvalues[1])];
+            # is single shell?
+            if len(bvalues) <= 2:
+                results['datatype_tags'].append("single_shell")
+                results['tags'] = ["b" + str(bvalues[1])];
 
-                # write out normalized bvals (write in FSL format - space delimited)
-                f = open('dwi.bvals', 'w')
-                f.write(bvals_cols_clean)
-                f.write("\n")
-                f.close()
+            # write out normalized bvals (write in FSL format - space delimited)
+            f = open('dwi.bvals', 'w')
+            f.write(bvals_cols_clean)
+            f.write("\n")
+            f.close()
 
-            except IOError:
-                print("failed to load bvals:" + config['bvals'])
-                results['errors'].append("Couldn't read bvals")
+        except IOError:
+            print("failed to load bvals:" + config['bvals'])
+            results['errors'].append("Couldn't read bvals")
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
