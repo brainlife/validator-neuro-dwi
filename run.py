@@ -161,7 +161,8 @@ if len(results['errors']) == 0:
     print("analyzing bvecs/bvals")
     bvals, bvecs = read_bvals_bvecs('dwi.bvals', 'dwi.bvecs')
     gtab = gradient_table(bvals, bvecs)
-    results['gtab_info'] = gtab.info
+    #results['gtab_info'] = gtab.info #set to Null somehwo
+    print gtab.info
 
     #sort into shells (1000th)
     shells = {}
