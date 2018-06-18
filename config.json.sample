@@ -1,6 +1,6 @@
 {
-    "dwi": "/mnt/scratch/testdata/108323/dwi/dwi.nii.gz",
-    "bvecs": "/mnt/scratch/testdata/108323/dwi/dwi.bvecs",
-    "bvals": "/mnt/scratch/testdata/108323/dwi/dwi.bvals"
+    "dwi": "/mnt/scratch/testdata/1_016/dwi/dwi.nii.gz",
+    "bvecs": "/mnt/scratch/testdata/1_016/dwi/dwi.bvecs",
+    "bvals": "/mnt/scratch/testdata/1_016/dwi/dwi.bvals"
 }
 

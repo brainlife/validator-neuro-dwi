@@ -8,6 +8,13 @@ import nibabel
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 
+import math
+import numpy as np
+
+# display where this is running (debug?)
+import socket
+print(socket.gethostname())
+
 # Things that this script checks
 # 
 # * make sure nibabel runs successfully on specified dwi file
@@ -18,16 +25,43 @@ from dipy.core.gradients import gradient_table
 # * make sure bvecs has 3 rows
 # * make sure bvals's cols count matches dwi's 4th dimension number
 # * make sure bvals has 1 row
+# * check for bvecs flipping (x/z and z)
 
-# display where this is running
-import socket
+#Returns the unit vector of the vector. 
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
 
-print(socket.gethostname())
+#Returns the angle in radians between vectors 'v1' and 'v2' 
+def angle_between(v1, v2):
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+#flip angle that's >90 to face the same direction
+def flip_angle(a):
+    if a > math.pi/2:
+        return math.pi - a
+    return a
+
+#find the most common bvals used
+def most_common(bvals):
+    round_bvals = []
+    for bval in bvals:
+        round_bvals.append(round(bval, -2))
+    return max(set(round_bvals), key=bvals.count)
+
+#the heart of bvecs/bvals detection
+def sum_diag(img, shift):
+    sum=img[0]
+    for i in range(1, img.shape[0]):
+        sum = np.roll(sum, shift)
+        sum = np.add(sum, img[i])
+    return sum
 
 with open('config.json') as config_json:
     config = json.load(config_json)
 
-results = {"errors": [], "warnings": []}
+results = {"errors": [], "warnings": [], "brainlife": []}
 directions = None
 gtab = []
 
@@ -41,10 +75,6 @@ def check_affine(affine):
     if affine[2][0] != 0: results['warnings'].append("transform matrix 2.0 is not 0")
     if affine[2][1] != 0: results['warnings'].append("transform matrix 2.1 is not 0")
     if affine[2][2] != 1: results['warnings'].append("transform  matrix 2.2 is not 1")
-
-#def isInt(v):
-#    v = v.strip()
-#    return v=='0' or (v if v.find('..') > -1 else v.lstrip('-+').rstrip('0').rstrip('.')).isdigit()
 
 def isFloat(v):
     try:     i = float(v)
@@ -65,6 +95,7 @@ if config['bvecs'] is None:
 
 if config['bvals'] is None:
     results['errors'].append("bvals not set")
+
 
 if len(results['errors']) == 0:
     try:
@@ -213,16 +244,19 @@ if len(results['errors']) == 0:
                 'size': 8
             }
         })
-    results['brainlife'] = [{
+    results['brainlife'].append({
         'type': 'plotly',
         'name': 'Gradient Table(bvecs/bvals)',
         'layout': {},
         'data': data,
-    }]
+    })
 
+    img_data = None
     try:
-        print("validating dwi")
+        print("loading dwi to check bvecs flipping later")
         img = nibabel.load(config['dwi'])
+        img_data = img.get_data()
+
         results['dwi_headers'] = str(img.header)
         results['dwi_base_affine'] = str(img.header.get_base_affine())
 
@@ -241,10 +275,106 @@ if len(results['errors']) == 0:
         check_affine(img.header.get_base_affine())
 
         #create symlink
+        if(os.path.islink('dwi.nii.gz')):
+            os.unlink('dwi.nii.gz')
         os.symlink(config['dwi'], "dwi.nii.gz")
 
     except Exception as e:
         results['errors'].append("nibabel failed on dwi. error code: " + str(e))
+
+    ###############################################################################################
+    #
+    # check bvecs flipping
+    #
+
+    #find the most common bvals (most likely to find the right directions)
+    #TODO if if there are near identical number of bvalues, should I use higher bvalue?
+    b=most_common(bvals.tolist())
+    #print("using bvalue", b)
+    
+    #calculate bvecs angle from various reference angles
+    angs = []
+    for idx in range(len(bvecs)):
+        bvec = bvecs[idx]
+        bval = bvals[idx]
+
+        #ignore bvecs with low bval
+        if bval < 500:
+            #print("low bval", idx);
+            continue
+
+        #ignore bvecs that's too off
+        if abs(bval - b) > 300:
+            #print("bval too off", idx, bval);
+            continue
+
+        #calculate angle from x/y/z directions
+        x1_ang = flip_angle(angle_between(bvec, (1,1,0)))
+        x2_ang = flip_angle(angle_between(bvec, (-1,1,0)))
+        z1_ang = flip_angle(angle_between(bvec, (1,0,1)))
+        z2_ang = flip_angle(angle_between(bvec, (1,0,-1)))
+        angs.append((x1_ang, x2_ang, z1_ang, z2_ang, bvec, bval, idx));
+
+    #analyze x/y flipping
+    angs.sort(key=lambda tup: tup[0])
+    x1 = angs[0][6]
+    angs.sort(key=lambda tup: tup[1])
+    x2 = angs[0][6]
+    left=0
+    right=0
+    for i in range(img_data.shape[2]):
+        slice1 = img_data[:, :, i, x1]
+        slice2 = img_data[:, :, i, x2]
+      
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
+
+        #high std means image is aligned with the same direction
+        #low std means image is aligned with orthogonal direction
+        right+=np.std(sum_diag(pos, 1))
+        left+=np.std(sum_diag(pos, -1))
+        right+=np.std(sum_diag(neg, -1))
+        left+=np.std(sum_diag(neg, 1))
+        #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
+        
+    x_flipped=False
+    print (left, right)
+    if left < right:
+        results['warnings'].append("bvecs-x (or bvecs-y) seems to be flipped. You should flip x")
+        x_flipped=True
+
+    #analyze z flipping
+    #find best slices to analyze for x flip
+    angs.sort(key=lambda tup: tup[2])
+    z1 = angs[0][6]
+    #print "z1", angs[0]
+    angs.sort(key=lambda tup: tup[3])
+    z2 = angs[0][6]
+    #print "z2", angs[0]
+
+    #if x is flipped, switch z1/z2 to simulate *correct* x-flip
+    if x_flipped:
+        t = z2
+        z2 = z1
+        z1 = t
+    left=0
+    right=0
+    for i in range(img_data.shape[1]):
+        slice1 = img_data[:, i, :, z1]
+        slice2 = img_data[:, i, :, z2]
+     
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
+
+        right+=np.std(sum_diag(pos, 1))
+        left+=np.std(sum_diag(pos, -1))
+        right+=np.std(sum_diag(neg, -1))
+        left+=np.std(sum_diag(neg, 1))
+        #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
+        
+    print (left, right)
+    if left < right:
+        results['warnings'].append("bvecs-z seems to be flipped. You should flip it")
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
