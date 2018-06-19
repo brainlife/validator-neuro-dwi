@@ -65,16 +65,25 @@ results = {"errors": [], "warnings": [], "brainlife": []}
 directions = None
 gtab = []
 
+def warning(msg):
+    global results
+    results['warnings'].append(msg) 
+    results['brainlife'].append({"type": "warning", "msg": msg}) 
+def error(msg):
+    global results
+    results['errors'].append(msg) 
+    results['brainlife'].append({"type": "error", "msg": msg}) 
+
 def check_affine(affine):
-    if affine[0][0] != 1: results['warnings'].append("transform matrix 0.1 is not 1")
-    if affine[0][1] != 0: results['warnings'].append("transform matrix 0.2 is not 0")
-    if affine[0][2] != 0: results['warnings'].append("transform matrix 0.2 is not 0")
-    if affine[1][0] != 0: results['warnings'].append("transform matrix 1.0 is not 0")
-    if affine[1][1] != 1: results['warnings'].append("transform matrix 1.1 is not 1")
-    if affine[1][2] != 0: results['warnings'].append("transform matrix 1.2 is non 0")
-    if affine[2][0] != 0: results['warnings'].append("transform matrix 2.0 is not 0")
-    if affine[2][1] != 0: results['warnings'].append("transform matrix 2.1 is not 0")
-    if affine[2][2] != 1: results['warnings'].append("transform  matrix 2.2 is not 1")
+    if affine[0][0] != 1: warning("transform matrix 0.1 is not 1")
+    if affine[0][1] != 0: warning("transform matrix 0.2 is not 0")
+    if affine[0][2] != 0: warning("transform matrix 0.2 is not 0")
+    if affine[1][0] != 0: warning("transform matrix 1.0 is not 0")
+    if affine[1][1] != 1: warning("transform matrix 1.1 is not 1")
+    if affine[1][2] != 0: warning("transform matrix 1.2 is non 0")
+    if affine[2][0] != 0: warning("transform matrix 2.0 is not 0")
+    if affine[2][1] != 0: warning("transform matrix 2.1 is not 0")
+    if affine[2][2] != 1: warning("transform  matrix 2.2 is not 1")
 
 def isFloat(v):
     try:     i = float(v)
@@ -88,13 +97,13 @@ def isInt(v):
 
 print("checking input paramerters")
 if config['dwi'] is None:
-    results['errors'].append("dwi not set")
+    error("dwi not set")
 
 if config['bvecs'] is None:
-    results['errors'].append("bvecs not set")
+    error("bvecs not set")
 
 if config['bvals'] is None:
-    results['errors'].append("bvals not set")
+    error("bvals not set")
 
 
 if len(results['errors']) == 0:
@@ -111,11 +120,11 @@ if len(results['errors']) == 0:
 
         # check 4d size
         if directions < 10:
-            results['warnings'].append("direction seems too small.." + str(directions))
+            warning("direction seems too small.." + str(directions))
 
         # bvecs should have 3 row
         if len(bvecs_rows) != 3:
-            results['errors'].append("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
+            error("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
 
         # write out bvecs (write in FSL format - space delimited)
         f = open('dwi.bvecs', 'w')
@@ -129,13 +138,13 @@ if len(results['errors']) == 0:
             #check to make sure all values are float
             for v in row_clean.split(' '):
                 if not isFloat(v):
-                    results['errors'].append("bvecs contains non float:" +v)
+                    error("bvecs contains non float:" +v)
 
         f.close();
 
     except IOError:
         print("failed to load bvecs:" + config['bvecs'])
-        results['errors'].append("Couldn't read bvecs")
+        error("Couldn't read bvecs")
 
     try:
         print("validating bvals")
@@ -148,12 +157,12 @@ if len(results['errors']) == 0:
         bvals_cols = bvals_cols_clean.split(" ")
 
         if directions != len(bvals_cols):
-            results['errors'].append(
+            error(
                 "bvals column count which is " + str(len(bvals_cols)) + " doesn't match dwi's 4d number:" + str(
                     directions))
 
         if len(bvals_rows) != 1:
-            results['errors'].append("bvals should have 1 row but it has " + str(len(bvals_rows)))
+            error("bvals should have 1 row but it has " + str(len(bvals_rows)))
 
         results['datatype_tags'] = []
 
@@ -167,7 +176,7 @@ if len(results['errors']) == 0:
         normalized = True
         for bvalue in bvalues:
             if not isInt(bvalue):
-                results['errors'].append("bvals contains non int:" +v)
+                error("bvals contains non int:" +v)
             else:
                 if float(bvalue) != round(float(bvalue), -2):
                     normalized = False
@@ -187,7 +196,7 @@ if len(results['errors']) == 0:
 
     except IOError:
         print("failed to load bvals:" + config['bvals'])
-        results['errors'].append("Couldn't read bvals")
+        error("Couldn't read bvals")
 
     print("analyzing bvecs/bvals")
     bvals, bvecs = read_bvals_bvecs('dwi.bvals', 'dwi.bvecs')
@@ -234,7 +243,7 @@ if len(results['errors']) == 0:
         data.append({
             'type': 'scatter3d',
             'mode': 'text', 
-            'name': shell, 
+            'name': str(shell), 
             'x': xs,
             'y': ys,
             'z': zs,
@@ -246,14 +255,14 @@ if len(results['errors']) == 0:
         })
     results['brainlife'].append({
         'type': 'plotly',
-        'name': 'Gradient Table(bvecs/bvals)',
+        'name': 'Gradients (bvecs/bvals)',
         'layout': {},
         'data': data,
     })
 
     img_data = None
     try:
-        print("loading dwi to check bvecs flipping later")
+        print("loading dwi to check bvecs flipping")
         img = nibabel.load(config['dwi'])
         img_data = img.get_data()
 
@@ -263,13 +272,11 @@ if len(results['errors']) == 0:
         # check dimensions
         dims = img.header['dim'][0]
         if dims != 4:
-            results['errors'].append("DWI should be 4D but has " + str(dims))
+            error("DWI should be 4D but has " + str(dims))
 
         # 4d should have same col num as bvecs/bval directions
         if directions != img.header['dim'][4]:
-            results['errors'].append(
-                "bvecs column count which is " + str(img.header['dim'][4]) + " doesn't match bvecs col counts:" + str(
-                    directions))
+            error("bvecs column count which is " + str(img.header['dim'][4]) + " doesn't match bvecs col counts:" + str(directions))
 
         # check affine
         check_affine(img.header.get_base_affine())
@@ -280,7 +287,7 @@ if len(results['errors']) == 0:
         os.symlink(config['dwi'], "dwi.nii.gz")
 
     except Exception as e:
-        results['errors'].append("nibabel failed on dwi. error code: " + str(e))
+        error("nibabel failed on dwi. error code: " + str(e))
 
     ###############################################################################################
     #
@@ -318,8 +325,10 @@ if len(results['errors']) == 0:
     #analyze x/y flipping
     angs.sort(key=lambda tup: tup[0])
     x1 = angs[0][6]
+    print(x1)
     angs.sort(key=lambda tup: tup[1])
     x2 = angs[0][6]
+    print(x2)
     left=0
     right=0
     for i in range(img_data.shape[2]):
@@ -340,8 +349,10 @@ if len(results['errors']) == 0:
     x_flipped=False
     print (left, right)
     if left < right:
-        results['warnings'].append("bvecs-x (or bvecs-y) seems to be flipped. You should flip x")
+        warning("bvecs-x (or bvecs-y) seems to be flipped. You should flip x")
         x_flipped=True
+    else:
+        results['brainlife'].append({"type": "success", "msg": "bvecs-xy flip looks good"})
 
     #analyze z flipping
     #find best slices to analyze for x flip
@@ -374,9 +385,11 @@ if len(results['errors']) == 0:
         
     print (left, right)
     if left < right:
-        results['warnings'].append("bvecs-z seems to be flipped. You should flip it")
+        warning("bvecs-z seems to be flipped. You should flip it")
+    else:
+        results['brainlife'].append({"type": "success", "msg": "bvecs-z flip looks good"})
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
 
-print(results)
+#print(results)
