@@ -83,7 +83,7 @@ def check_affine(affine):
     if affine[1][2] != 0: warning("transform matrix 1.2 is non 0")
     if affine[2][0] != 0: warning("transform matrix 2.0 is not 0")
     if affine[2][1] != 0: warning("transform matrix 2.1 is not 0")
-    if affine[2][2] != 1: warning("transform  matrix 2.2 is not 1")
+    if affine[2][2] != 1: warning("transform matrix 2.2 is not 1")
 
 def isFloat(v):
     try:     i = float(v)
@@ -213,6 +213,11 @@ if len(results['errors']) == 0:
         if shell not in shells:
             shells[shell] = []
         shells[shell].append((i, bval, bvec*bval))
+
+    #simulate bvecs flipping
+    #for bvec in bvecs:
+    #    bvec[0] = -bvec[0]
+    #    bvec[1] = -bvec[1]
 
     #output into plotly format
     data = []
@@ -357,8 +362,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, :, i, x1]
         slice2 = img_data[:, :, i, x2]
       
-        pos = np.subtract(slice2, slice1).clip(max=0)
-        neg = np.subtract(slice1, slice2).clip(max=0)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
@@ -368,15 +373,14 @@ if len(results['errors']) == 0:
         left+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
-    x_flipped=False
-    print ("xflip")
-    print (left, right)
-    if left < right:
-        print("xflipped!")
-        warning("bvecs-x seems to be flipped")
-        x_flipped=True
-    else:
-        results['brainlife'].append({"type": "success", "msg": "bvecs-x flip looks good"})
+    xy_flipped=False
+    print ("xy score", left, right)
+    if left > right:
+        print("x/y-flipped!")
+        #warning("bvecs-x seems to be flipped")
+        xy_flipped=True
+    #else:
+    #    results['brainlife'].append({"type": "success", "msg": "bvecs-x flip looks good"})
 
     ###############################################################################################
     # y test
@@ -386,8 +390,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[i, :, :, y1]
         slice2 = img_data[i, :, :, y2]
       
-        pos = np.subtract(slice2, slice1).clip(max=0)
-        neg = np.subtract(slice1, slice2).clip(max=0)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
@@ -397,15 +401,14 @@ if len(results['errors']) == 0:
         left+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
-    y_flipped=False
-    print ("yflip")
-    print (left, right)
-    if left < right:
-        print("yflipped!")
-        warning("bvecs-y seems to be flipped")
-        y_flipped=True
-    else:
-        results['brainlife'].append({"type": "success", "msg": "bvecs-y flip looks good"})
+    yz_flipped=False
+    print ("yz score", left, right)
+    if left > right:
+        print("y/z-flipped!")
+        #warning("bvecs-y seems to be flipped")
+        yz_flipped=True
+    #else:
+    #    results['brainlife'].append({"type": "success", "msg": "bvecs-y flip looks good"})
 
     #analyze z flipping
     #find best slices to analyze for x flip
@@ -425,8 +428,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, i, :, z1]
         slice2 = img_data[:, i, :, z2]
      
-        pos = np.subtract(slice2, slice1).clip(max=0)
-        neg = np.subtract(slice1, slice2).clip(max=0)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
 
         right+=np.std(sum_diag(pos, 1))
         left+=np.std(sum_diag(pos, -1))
@@ -434,13 +437,28 @@ if len(results['errors']) == 0:
         left+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
-    print ("zflip")
-    print (left, right)
-    if left < right:
-        print("zflipped!")
-        warning("bvecs-z seems to be flipped. You should flip it")
-    else:
+    print ("xz score", left, right)
+    xz_flipped=False
+    if left > right:
+        print("x/z-flipped!")
+        xz_flipped=True
+        #warning("bvecs-z seems to be flipped. You should flip it")
+    #else:
+    #    results['brainlife'].append({"type": "success", "msg": "bvecs-z flip looks good"})
+
+    if not xy_flipped and not yz_flipped and not xz_flipped:
+        print("no flip!")
         results['brainlife'].append({"type": "success", "msg": "bvecs-z flip looks good"})
+
+    if xy_flipped and xz_flipped:
+        print("x is flipped !")
+        warning("bvecs-x seems to be flipped. You should flip it")
+    if xy_flipped and yz_flipped:
+        print("y is flipped !")
+        warning("bvecs-y seems to be flipped. You should flip it")
+    if yz_flipped and xz_flipped:
+        print("z is flipped !")
+        warning("bvecs-z seems to be flipped. You should flip it")
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
