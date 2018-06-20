@@ -1,6 +1,6 @@
 {
-    "dwi": "./5b16b54d6183100027ee6c01/dwi.nii.gz",
-    "bvecs": "./5b16b54d6183100027ee6c01/dwi.bvecs",
-    "bvals": "./5b16b54d6183100027ee6c01/dwi.bvals"
+    "dwi": "./0012/dwi.nii.gz",
+    "bvecs": "./0012/dwi.bvecs",
+    "bvals": "./0012/dwi.bvals"
 }
 
