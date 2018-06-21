@@ -63,9 +63,9 @@ def sum_diag(img, shift):
 with open('config.json') as config_json:
     config = json.load(config_json)
 
-results = {"errors": [], "warnings": [], "brainlife": []}
+results = {"errors": [], "warnings": [], "brainlife": [], "datatype_tags": [], "tags": []}
 directions = None
-gtab = []
+gtab = None
 
 def warning(msg):
     global results
@@ -159,7 +159,7 @@ if len(results['errors']) == 0:
         print("validating bvals")
         bvals = open(config['bvals'])
         bvals_rows = bvals.readlines()
-        bvals_cols = bvals_rows[0].strip().replace(",", " ")
+        bvals_cols = bvals_rows[0].strip().replace(",", " ").replace("\t", " ")
 
         # remove double spaces
         bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
@@ -173,12 +173,9 @@ if len(results['errors']) == 0:
         if len(bvals_rows) != 1:
             error("bvals should have 1 row but it has " + str(len(bvals_rows)))
 
-        results['datatype_tags'] = []
 
         # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
         unique_bvals = list(set(bvals_cols))
-        # results['tags'] = ['b'+bval for bval in unique_bvals]
-
         bvalues = list(set(bvals_cols))
 
         # is normalized?
@@ -195,7 +192,7 @@ if len(results['errors']) == 0:
         # is single shell?
         if len(bvalues) <= 2:
             results['datatype_tags'].append("single_shell")
-            results['tags'] = ["b" + str(bvalues[1])];
+            results['tags'].append("b" + str(bvalues[1]))
 
         # write out normalized bvals (write in FSL format - space delimited)
         f = open('dwi.bvals', 'w')
@@ -209,9 +206,15 @@ if len(results['errors']) == 0:
 
     print("analyzing bvecs/bvals")
     bvals, bvecs = read_bvals_bvecs('dwi.bvals', 'dwi.bvecs')
-    gtab = gradient_table(bvals, bvecs)
-    #results['gtab_info'] = gtab.info #set to Null somehwo
-    print gtab.info
+    try: 
+        gtab = gradient_table(bvals, bvecs)
+        #results['gtab_info'] = gtab.info #set to Null somehwo
+        print gtab
+    except ValueError,e:
+        warning(str(e))
+
+        #re-try with rediculous atol to bypass the check (some data has [0,0,0] vector!
+        gtab = gradient_table(bvals, bvecs, atol=1)
 
     #sort into shells (1000th)
     shells = {}
@@ -267,6 +270,7 @@ if len(results['errors']) == 0:
                 'size': 8
             }
         })
+
     results['brainlife'].append({
         'type': 'plotly',
         'name': 'Gradients (bvecs/bvals)',
@@ -293,8 +297,12 @@ if len(results['errors']) == 0:
         else:
             results['storage_orientation'] = 'neurological'
             print('storage_orientation: neurological - flipping x')
+            #I should really flip the image on x axis.. but easier thing to do is just 
+            #flip the bvec-x 
             for bvec in bvecs:
                 bvec[0] = -bvec[0]
+            warning("storage orientation is neurologial (det>0). Apps are often written for radiological orientation. Watch out!")
+            results['tags'].append("neurological")
 
         # check dimensions
         dims = img.header['dim'][0]
@@ -342,6 +350,12 @@ if len(results['errors']) == 0:
             #print("bval too off", idx, bval);
             continue
 
+        #ignore 0 vector
+        print(bval, np.linalg.norm(bvec))
+        if np.linalg.norm(bvec) == 0:
+            #[0,0,0] with non-0 bval? maybe it means b0?
+            continue
+
         #calculate angle from x/y/z directions
         x1_ang = flip_angle(angle_between(bvec, (1,1,0)))
         x2_ang = flip_angle(angle_between(bvec, (-1,1,0)))
@@ -377,7 +391,7 @@ if len(results['errors']) == 0:
     print("loading image data")
     img_data = img.get_fdata()
 
-    print("value at 76,33,34", img_data[76, 33, 34,0])
+    #print("value at 76,33,34", img_data[76, 33, 34,0])
 
     ###############################################################################################
     # x test
@@ -388,8 +402,12 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, :, i, x1]
         slice2 = img_data[:, :, i, x2]
       
-        pos = np.subtract(slice2, slice1).clip(min=b/2)
-        neg = np.subtract(slice1, slice2).clip(min=b/2)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
+
+        #if i == 30:
+        #    plt.imshow(pos, cmap='gray', origin='lower')
+        #    plt.show() 
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
@@ -416,8 +434,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[i, :, :, y1]
         slice2 = img_data[i, :, :, y2]
       
-        pos = np.subtract(slice2, slice1).clip(min=b/3)
-        neg = np.subtract(slice1, slice2).clip(min=b/3)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
 
         #plt.subplot(4, 8, (i/4)+1)
         #plt.imshow(pos, cmap='gray') 
@@ -459,8 +477,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, i, :, z1]
         slice2 = img_data[:, i, :, z2]
      
-        pos = np.subtract(slice2, slice1).clip(min=b/4)
-        neg = np.subtract(slice1, slice2).clip(min=b/4)
+        pos = np.subtract(slice2, slice1).clip(min=0)
+        neg = np.subtract(slice1, slice2).clip(min=0)
 
         right+=np.std(sum_diag(pos, 1))
         left+=np.std(sum_diag(pos, -1))
