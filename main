@@ -500,7 +500,7 @@ if len(results['errors']) == 0:
 
     if not xy_flipped and not yz_flipped and not xz_flipped:
         print("no flip!")
-        results['brainlife'].append({"type": "success", "msg": "bvecs-z flip looks good"})
+        results['brainlife'].append({"type": "info", "msg": "bvecs-z flip looks good"})
 
     if xy_flipped and xz_flipped:
         print("x is flipped !")
