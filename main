@@ -11,6 +11,8 @@ from dipy.core.gradients import gradient_table
 import math
 import numpy as np
 
+#import matplotlib.pyplot as plt
+
 # display where this is running (debug?)
 import socket
 print(socket.gethostname())
@@ -94,6 +96,14 @@ def isInt(v):
     try:     i = int(v)
     except:  return False
     return True
+
+def get_change(current, previous):
+    if current == previous:
+        return 100.0
+    try:
+        return (abs(current - previous) / previous) * 100.0
+    except ZeroDivisionError:
+        return 0
 
 print("checking input paramerters")
 if config['dwi'] is None:
@@ -362,8 +372,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, :, i, x1]
         slice2 = img_data[:, :, i, x2]
       
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice2, slice1).clip(min=b/2)
+        neg = np.subtract(slice1, slice2).clip(min=b/2)
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
@@ -374,7 +384,7 @@ if len(results['errors']) == 0:
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
     xy_flipped=False
-    print ("xy score", left, right)
+    print ("xy score", left, right, get_change(left, right))
     if left > right:
         print("x/y-flipped!")
         #warning("bvecs-x seems to be flipped")
@@ -390,8 +400,11 @@ if len(results['errors']) == 0:
         slice1 = img_data[i, :, :, y1]
         slice2 = img_data[i, :, :, y2]
       
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice2, slice1).clip(min=b/3)
+        neg = np.subtract(slice1, slice2).clip(min=b/3)
+
+        #plt.subplot(4, 8, (i/4)+1)
+        #plt.imshow(pos, cmap='gray') 
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
@@ -400,9 +413,11 @@ if len(results['errors']) == 0:
         right+=np.std(sum_diag(neg, -1))
         left+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
+
+    #plt.show()
         
     yz_flipped=False
-    print ("yz score", left, right)
+    print ("yz score", left, right, get_change(left, right))
     if left > right:
         print("y/z-flipped!")
         #warning("bvecs-y seems to be flipped")
@@ -428,8 +443,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, i, :, z1]
         slice2 = img_data[:, i, :, z2]
      
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice2, slice1).clip(min=b/4)
+        neg = np.subtract(slice1, slice2).clip(min=b/4)
 
         right+=np.std(sum_diag(pos, 1))
         left+=np.std(sum_diag(pos, -1))
@@ -437,7 +452,7 @@ if len(results['errors']) == 0:
         left+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
-    print ("xz score", left, right)
+    print ("xz score", left, right, get_change(left, right))
     xz_flipped=False
     if left > right:
         print("x/z-flipped!")
