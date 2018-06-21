@@ -115,7 +115,6 @@ if config['bvecs'] is None:
 if config['bvals'] is None:
     error("bvals not set")
 
-
 if len(results['errors']) == 0:
     try:
         print("validating bvecs")
@@ -275,13 +274,27 @@ if len(results['errors']) == 0:
         'data': data,
     })
 
-    img_data = None
     try:
         print("loading dwi to check bvecs flipping")
         img = nibabel.load(config['dwi'])
+        print(img.header) 
 
-        results['dwi_headers'] = str(img.header)
-        results['dwi_base_affine'] = str(img.header.get_base_affine())
+        results['dwi_headers'] = str(img.header) #need to str() so that we can save it to product.json
+        results['dwi_affine'] = str(img.affine) #need to str() as array is not serializable
+        
+        #determine storage orientation
+        #http://community.mrtrix.org/t/mrconvert-flips-gradients/581/6
+        det = np.linalg.det(img.affine)
+        results['dwi_affine_determinant'] = det
+        print("affine determinant", det)
+        if det < 0:
+            results['storage_orientation'] = 'radiological'
+            print('storage_orientation: radiological - matches bvecs orientation')
+        else:
+            results['storage_orientation'] = 'neurological'
+            print('storage_orientation: neurological - flipping x')
+            for bvec in bvecs:
+                bvec[0] = -bvec[0]
 
         # check dimensions
         dims = img.header['dim'][0]
@@ -361,14 +374,17 @@ if len(results['errors']) == 0:
     z2 = angs[0][8]
     print(angs[0])
 
-    print("loading data")
-    img_data = img.get_data()
+    print("loading image data")
+    img_data = img.get_fdata()
+
+    print("value at 76,33,34", img_data[76, 33, 34,0])
 
     ###############################################################################################
     # x test
     left=0
     right=0
     for i in range(img_data.shape[2]):
+        
         slice1 = img_data[:, :, i, x1]
         slice2 = img_data[:, :, i, x2]
       
