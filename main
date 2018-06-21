@@ -11,8 +11,6 @@ from dipy.core.gradients import gradient_table
 import math
 import numpy as np
 
-#import matplotlib.pyplot as plt
-
 # display where this is running (debug?)
 import socket
 print(socket.gethostname())
@@ -293,18 +291,16 @@ if len(results['errors']) == 0:
         #http://community.mrtrix.org/t/mrconvert-flips-gradients/581/6
         det = np.linalg.det(img.affine)
         results['dwi_affine_determinant'] = det
+        radiological=False
         print("affine determinant", det)
         if det < 0:
+            radiological=True
             results['storage_orientation'] = 'radiological'
             print('storage_orientation: radiological - matches bvecs orientation')
         else:
             results['storage_orientation'] = 'neurological'
             print('storage_orientation: neurological - flipping x')
-            #I should really flip the image on x axis.. but easier thing to do is just 
-            #flip the bvec-x 
-            for bvec in bvecs:
-                bvec[0] = -bvec[0]
-            warning("storage orientation is neurologial (det>0). Apps are often written for radiological orientation. Watch out!")
+            warning("storage orientation is neurologial (det>0). Watch out!")
             results['tags'].append("neurological")
 
         # check dimensions
@@ -353,13 +349,20 @@ if len(results['errors']) == 0:
             #print("bval too off", idx, bval);
             continue
 
-        #ignore 0 vector
-        print(bval, np.linalg.norm(bvec))
+        #ignore vec like [0,0,0] with non-0 bval? maybe it means b0?
+        #print(bval, np.linalg.norm(bvec))
         if np.linalg.norm(bvec) == 0:
-            #[0,0,0] with non-0 bval? maybe it means b0?
             continue
 
         #calculate angle from x/y/z directions
+        #if radiological:
+        #    x1_ang = flip_angle(angle_between(bvec, (1,1,0)))
+        #    x2_ang = flip_angle(angle_between(bvec, (-1,1,0)))
+        #else:
+        #    #need to flip x for neurological data as bvecs are stored in radiological direction
+        #    x1_ang = flip_angle(angle_between(bvec, (-1,1,0)))
+        #    x2_ang = flip_angle(angle_between(bvec, (1,1,0)))
+
         x1_ang = flip_angle(angle_between(bvec, (1,1,0)))
         x2_ang = flip_angle(angle_between(bvec, (-1,1,0)))
         y1_ang = flip_angle(angle_between(bvec, (0,1,1)))
@@ -408,8 +411,24 @@ if len(results['errors']) == 0:
         pos = np.subtract(slice2, slice1).clip(min=0)
         neg = np.subtract(slice1, slice2).clip(min=0)
 
-        #if i == 30:
-        #    plt.imshow(pos, cmap='gray', origin='lower')
+        #if i == img_data.shape[2]/2:
+        #    print("showing", i)
+        #    print(img_data[53,70,50,0])
+        #    import matplotlib.pyplot as plt
+        #    plt.subplot(2,2,1);
+        #    #plt.imshow(pos.T, cmap='gray', origin='low')
+        #    plt.imshow(slice1)
+
+        #    plt.subplot(2,2,2);
+        #    plt.imshow(pos)
+
+        #    plt.subplot(2,2,3);
+        #    plt.imshow(slice2)
+        #    #plt.imshow(neg.T, cmap='gray', origin='low')
+
+        #    plt.subplot(2,2,4);
+        #    plt.imshow(neg)
+
         #    plt.show() 
 
         #high std means image is aligned with the same direction
