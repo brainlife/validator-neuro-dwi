@@ -71,10 +71,13 @@ def warning(msg):
     global results
     results['warnings'].append(msg) 
     results['brainlife'].append({"type": "warning", "msg": msg}) 
+    print(msg)
+
 def error(msg):
     global results
     results['errors'].append(msg) 
     results['brainlife'].append({"type": "error", "msg": msg}) 
+    print(msg)
 
 def check_affine(affine):
     if affine[0][0] != 1: warning("transform matrix 0.1 is not 1")
@@ -120,7 +123,7 @@ if len(results['errors']) == 0:
         print("validating bvecs")
         bvecs = open(config['bvecs'])
         bvecs_rows = bvecs.readlines()
-        bvecs_cols = bvecs_rows[0].strip().replace(",", " ")
+        bvecs_cols = bvecs_rows[0].strip().replace(",", " ").replace("\t", " ")
 
         # remove double spaces
         bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols)
@@ -138,7 +141,7 @@ if len(results['errors']) == 0:
         # write out bvecs (write in FSL format - space delimited)
         f = open('dwi.bvecs', 'w')
         for row in bvecs_rows:
-            row = row.strip().replace(",", " ")
+            row = row.strip().replace(",", " ").replace("\t", " ")
             row_clean = re.sub(' +', ' ', row)
 
             f.write(row_clean)
@@ -511,5 +514,8 @@ if len(results['errors']) == 0:
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
+
+if len(results["errors"]) > 0:
+    print "test failed"
 
 #print(results)
