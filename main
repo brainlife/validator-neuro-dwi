@@ -408,8 +408,8 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, :, i, x1]
         slice2 = img_data[:, :, i, x2]
       
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice1, slice2).clip(min=0)
+        neg = np.subtract(slice2, slice1).clip(min=0)
 
         #if i == img_data.shape[2]/2:
         #    print("showing", i)
@@ -433,10 +433,10 @@ if len(results['errors']) == 0:
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
-        right+=np.std(sum_diag(pos, 1))
-        left+=np.std(sum_diag(pos, -1))
-        right+=np.std(sum_diag(neg, -1))
-        left+=np.std(sum_diag(neg, 1))
+        left+=np.std(sum_diag(pos, 1))
+        right+=np.std(sum_diag(pos, -1))
+        left+=np.std(sum_diag(neg, -1))
+        right+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
         
     xy_flipped=False
@@ -456,18 +456,18 @@ if len(results['errors']) == 0:
         slice1 = img_data[i, :, :, y1]
         slice2 = img_data[i, :, :, y2]
       
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice1, slice2).clip(min=0)
+        neg = np.subtract(slice2, slice1).clip(min=0)
 
         #plt.subplot(4, 8, (i/4)+1)
         #plt.imshow(pos, cmap='gray') 
 
         #high std means image is aligned with the same direction
         #low std means image is aligned with orthogonal direction
-        right+=np.std(sum_diag(pos, 1))
-        left+=np.std(sum_diag(pos, -1))
-        right+=np.std(sum_diag(neg, -1))
-        left+=np.std(sum_diag(neg, 1))
+        left+=np.std(sum_diag(pos, 1))
+        right+=np.std(sum_diag(pos, -1))
+        left+=np.std(sum_diag(neg, -1))
+        right+=np.std(sum_diag(neg, 1))
         #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
 
     #plt.show()
@@ -499,14 +499,13 @@ if len(results['errors']) == 0:
         slice1 = img_data[:, i, :, z1]
         slice2 = img_data[:, i, :, z2]
      
-        pos = np.subtract(slice2, slice1).clip(min=0)
-        neg = np.subtract(slice1, slice2).clip(min=0)
+        pos = np.subtract(slice1, slice2).clip(min=0)
+        neg = np.subtract(slice2, slice1).clip(min=0)
 
-        right+=np.std(sum_diag(pos, 1))
-        left+=np.std(sum_diag(pos, -1))
-        right+=np.std(sum_diag(neg, -1))
-        left+=np.std(sum_diag(neg, 1))
-        #print(i, np.std(sum_diag(pos, 1)), np.std(sum_diag(pos, -1)), np.std(sum_diag(neg, 1)), np.std(sum_diag(neg, -1)))
+        left+=np.std(sum_diag(pos, 1))
+        right+=np.std(sum_diag(pos, -1))
+        left+=np.std(sum_diag(neg, -1))
+        right+=np.std(sum_diag(neg, 1))
         
     print ("xz score", left, right, get_change(left, right))
     xz_flipped=False
