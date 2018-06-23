@@ -78,15 +78,17 @@ def error(msg):
     print(msg)
 
 def check_affine(affine):
-    if affine[0][0] != 1: warning("transform matrix 0.1 is not 1")
-    if affine[0][1] != 0: warning("transform matrix 0.2 is not 0")
-    if affine[0][2] != 0: warning("transform matrix 0.2 is not 0")
-    if affine[1][0] != 0: warning("transform matrix 1.0 is not 0")
-    if affine[1][1] != 1: warning("transform matrix 1.1 is not 1")
-    if affine[1][2] != 0: warning("transform matrix 1.2 is non 0")
-    if affine[2][0] != 0: warning("transform matrix 2.0 is not 0")
-    if affine[2][1] != 0: warning("transform matrix 2.1 is not 0")
-    if affine[2][2] != 1: warning("transform matrix 2.2 is not 1")
+    #TODO - I think I need to devide [0,1] [1,1] [2,2] by pixdim? I am really not 
+    #sure how affine should look like..
+    #if abs(1-affine[0][0]) > 0.01: warning("transform matrix 0,1 is not near 1/-1 - %f" % affine[0][0])
+    if abs(affine[0][1]) > 0.01: warning("transform matrix 0.2 is not near 0")
+    if abs(affine[0][2]) > 0.01: warning("transform matrix 0.2 is not near 0")
+    if abs(affine[1][0]) > 0.01: warning("transform matrix 1.0 is not near 0")
+    #if abs(1-affine[1][1]) > 0.01: warning("transform matrix 1,1 is not near 1/-1 - %f" % affine[1][1])
+    if abs(affine[1][2]) > 0.01: warning("transform matrix 1.2 is non near 0")
+    if abs(affine[2][0]) > 0.01: warning("transform matrix 2.0 is not near 0")
+    if abs(affine[2][1]) > 0.01: warning("transform matrix 2.1 is not near 0")
+    #if abs(1-affine[2][2]) > 0.01: warning("transform matrix 2,2 is not near 1/-1 - %f" % affine[2][2])
 
 def isFloat(v):
     try:     i = float(v)
