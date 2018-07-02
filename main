@@ -396,8 +396,20 @@ if len(results['errors']) == 0:
     z2 = angs[0][8]
     print(angs[0])
 
-    print("loading image data")
-    img_data = img.get_fdata()
+    print("loading volume: x1: %d" % x1)
+    vol_x1 = img.dataobj[..., x1]
+    print("loading volume: x2: %d" % x2)
+    vol_x2 = img.dataobj[..., x2]
+
+    print("loading volume: y1: %d" % y1)
+    vol_y1 = img.dataobj[..., y1]
+    print("loading volume: y2: %d" % y2)
+    vol_y2 = img.dataobj[..., y2]
+
+    print("loading volume: z1: %d" % z1)
+    vol_z1 = img.dataobj[..., z1]
+    print("loading volume: z2: %d" % z2)
+    vol_z2 = img.dataobj[..., z2]
 
     #print("value at 76,33,34", img_data[76, 33, 34,0])
 
@@ -407,10 +419,12 @@ if len(results['errors']) == 0:
     #right=0
     p=0
     m=0
-    for i in range(img_data.shape[2]):
+    for i in range(vol_x1.shape[2]):
         
-        slice1 = img_data[:, :, i, x1]
-        slice2 = img_data[:, :, i, x2]
+        #slice1 = img_data[:, :, i, x1]
+        #slice2 = img_data[:, :, i, x2]
+        slice1 = vol_x1[:, :, i]
+        slice2 = vol_x2[:, :, i]
       
         pos = np.subtract(slice1, slice2).clip(min=0)
         neg = np.subtract(slice2, slice1).clip(min=0)
@@ -467,9 +481,11 @@ if len(results['errors']) == 0:
     # y test
     p=0
     m=0
-    for i in range(img_data.shape[0]):
-        slice1 = img_data[i, :, :, y1]
-        slice2 = img_data[i, :, :, y2]
+    for i in range(vol_y1.shape[2]):
+        #slice1 = img_data[i, :, :, y1]
+        #slice2 = img_data[i, :, :, y2]
+        slice1 = vol_y1[i, :, :]
+        slice2 = vol_y2[i, :, :]
       
         pos = np.subtract(slice1, slice2).clip(min=0)
         neg = np.subtract(slice2, slice1).clip(min=0)
@@ -522,9 +538,11 @@ if len(results['errors']) == 0:
     #right=0
     p=0
     m=0
-    for i in range(img_data.shape[1]):
-        slice1 = img_data[:, i, :, z1]
-        slice2 = img_data[:, i, :, z2]
+    for i in range(vol_z1.shape[1]):
+        #slice1 = img_data[:, i, :, z1]
+        #slice2 = img_data[:, i, :, z2]
+        slice1 = vol_z1[:, i, :]
+        slice2 = vol_z2[:, i, :]
      
         pos = np.subtract(slice1, slice2).clip(min=0)
         neg = np.subtract(slice2, slice1).clip(min=0)
@@ -557,7 +575,7 @@ if len(results['errors']) == 0:
 
     if not xy_flipped and not yz_flipped and not xz_flipped:
         print("no flip!")
-        results['brainlife'].append({"type": "info", "msg": "bvecs-z flip looks good"})
+        results['brainlife'].append({"type": "info", "msg": "bvecs is not flipped"})
 
     if xy_flipped and xz_flipped:
         print("x is flipped !")
