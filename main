@@ -414,7 +414,7 @@ if len(results['errors']) == 0:
     #print("value at 76,33,34", img_data[76, 33, 34,0])
 
     ###############################################################################################
-    # x test
+    # x/y test
     #left=0
     #right=0
     p=0
@@ -427,7 +427,10 @@ if len(results['errors']) == 0:
         slice2 = vol_x2[:, :, i]
       
         pos = np.subtract(slice1, slice2).clip(min=0)
+        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
         neg = np.subtract(slice2, slice1).clip(min=0)
+        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
+
 
         #if i == img_data.shape[2]/2:
         #    print("showing", i)
@@ -460,6 +463,8 @@ if len(results['errors']) == 0:
         r=np.std(sum_diag(pos, -1))
         l+=np.std(sum_diag(neg, -1))
         r+=np.std(sum_diag(neg, 1))
+        if l == r:
+            continue
         if l<r:
             p+=1.0
         else:
@@ -478,17 +483,17 @@ if len(results['errors']) == 0:
     #    results['brainlife'].append({"type": "success", "msg": "bvecs-x flip looks good"})
 
     ###############################################################################################
-    # y test
+    # y/z test
     p=0
     m=0
-    for i in range(vol_y1.shape[2]):
-        #slice1 = img_data[i, :, :, y1]
-        #slice2 = img_data[i, :, :, y2]
+    for i in range(vol_y1.shape[0]):
         slice1 = vol_y1[i, :, :]
         slice2 = vol_y2[i, :, :]
       
         pos = np.subtract(slice1, slice2).clip(min=0)
+        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
         neg = np.subtract(slice2, slice1).clip(min=0)
+        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
         #plt.subplot(4, 8, (i/4)+1)
         #plt.imshow(pos, cmap='gray') 
@@ -504,6 +509,8 @@ if len(results['errors']) == 0:
         r=np.std(sum_diag(pos, -1))
         l+=np.std(sum_diag(neg, -1))
         r+=np.std(sum_diag(neg, 1))
+        if l == r:
+            continue
         if l<r:
             p+=1.0
         else:
@@ -539,28 +546,24 @@ if len(results['errors']) == 0:
     p=0
     m=0
     for i in range(vol_z1.shape[1]):
-        #slice1 = img_data[:, i, :, z1]
-        #slice2 = img_data[:, i, :, z2]
         slice1 = vol_z1[:, i, :]
         slice2 = vol_z2[:, i, :]
      
         pos = np.subtract(slice1, slice2).clip(min=0)
+        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
         neg = np.subtract(slice2, slice1).clip(min=0)
-
-        #left+=np.std(sum_diag(pos, 1))
-        #right+=np.std(sum_diag(pos, -1))
-        #left+=np.std(sum_diag(neg, -1))
-        #right+=np.std(sum_diag(neg, 1))
+        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
         l=np.std(sum_diag(pos, 1))
         r=np.std(sum_diag(pos, -1))
         l+=np.std(sum_diag(neg, -1))
         r+=np.std(sum_diag(neg, 1))
+        if l == r:
+            continue
         if l<r:
             p+=1.0
         else:
             m+=1.0
-
         
     xz_flipped=False
     #print ("xz score", left, right, get_change(left, right))
@@ -575,17 +578,17 @@ if len(results['errors']) == 0:
 
     if not xy_flipped and not yz_flipped and not xz_flipped:
         print("no flip!")
-        results['brainlife'].append({"type": "info", "msg": "bvecs is not flipped"})
+        results['brainlife'].append({"type": "info", "msg": "bvecs directions look good!"})
 
     if xy_flipped and xz_flipped:
         print("x is flipped !")
-        warning("bvecs-x seems to be flipped. You should flip it")
+        warning("bvecs-x seems to be flipped.")
     if xy_flipped and yz_flipped:
         print("y is flipped !")
-        warning("bvecs-y seems to be flipped. You should flip it")
+        warning("bvecs-y seems to be flipped.")
     if yz_flipped and xz_flipped:
         print("z is flipped !")
-        warning("bvecs-z seems to be flipped. You should flip it")
+        warning("bvecs-z seems to be flipped.")
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)
