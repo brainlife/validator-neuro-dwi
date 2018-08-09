@@ -496,7 +496,7 @@ if len(results['errors']) == 0:
     yz_flipped=False
     #print ("yz score", left, right, get_change(left, right))
     #if left > right:
-    print ("xy score", p, m, get_change(p, m))
+    print ("yz score", p, m, get_change(p, m))
     if p < m:
         print("y/z-flipped!")
         #warning("bvecs-y seems to be flipped")
@@ -545,7 +545,7 @@ if len(results['errors']) == 0:
     xz_flipped=False
     #print ("xz score", left, right, get_change(left, right))
     #if left > right:
-    print ("xy score", p, m, get_change(p, m))
+    print ("xz score", p, m, get_change(p, m))
     if p < m:
         print("x/z-flipped!")
         xz_flipped=True
