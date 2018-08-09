@@ -1,6 +1,6 @@
 {
-    "dwi": "./0012/dwi.nii.gz",
-    "bvecs": "./0012/dwi.bvecs",
-    "bvals": "./0012/dwi.bvals"
+    "dwi": "/mnt/scratch/testdata/108323/dwi/dwi.nii.gz",
+    "bvecs": "/mnt/scratch/testdata/108323/dwi/dwi.bvecs",
+    "bvals": "/mnt/scratch/testdata/108323/dwi/dwi.bvals"
 }
 
