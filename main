@@ -90,10 +90,10 @@ def isFloat(v):
     except:  return False
     return True
 
-def isInt(v):
-    try:     i = int(v)
-    except:  return False
-    return True
+#def isInt(v):
+#    try:     i = int(v)
+#    except:  return False
+#    return True
 
 def get_change(current, previous):
     if current == previous:
@@ -161,6 +161,13 @@ if len(results['errors']) == 0:
 
         # remove double spaces
         bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
+
+        # convert bvals to int
+        bvals_cols_cleanint = []
+        for bval in bvals_cols_clean.split(" "):
+            bvals_cols_cleanint.append(str(int(round(float(bval), 0))))
+        bvals_cols_clean = " ".join(bvals_cols_cleanint)
+
         bvals_cols = bvals_cols_clean.split(" ")
 
         if directions != len(bvals_cols):
@@ -171,7 +178,6 @@ if len(results['errors']) == 0:
         if len(bvals_rows) != 1:
             error("bvals should have 1 row but it has " + str(len(bvals_rows)))
 
-
         # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
         unique_bvals = list(set(bvals_cols))
         bvalues = list(set(bvals_cols))
@@ -179,11 +185,8 @@ if len(results['errors']) == 0:
         # is normalized?
         normalized = True
         for bvalue in bvalues:
-            if not isInt(bvalue):
-                error("bvals contains non int:" +v)
-            else:
-                if float(bvalue) != round(float(bvalue), -2):
-                    normalized = False
+            if float(bvalue) != round(float(bvalue), -2):
+                normalized = False
         if normalized:
             results['datatype_tags'].append("normalized")
 
@@ -266,7 +269,7 @@ if len(results['errors']) == 0:
     #find the most common bvals (most likely to find the right directions)
     #TODO if if there are near identical number of bvalues, should I use higher bvalue?
     b=most_common(bvals.tolist())
-    print("using bvalue", b)
+    print("bvalue for flip check", b)
     
     #calculate bvecs angle from various reference angles
     angs = []
@@ -321,6 +324,7 @@ if len(results['errors']) == 0:
 
     ###############################################################################################
     # x/y test
+    print("running x/y flip test")
     #left=0
     #right=0
     p=0
@@ -374,7 +378,6 @@ if len(results['errors']) == 0:
             m+=1.0
 
     xy_flipped=False
-    print ("xy")
     print ("  noflip", p)
     print ("  flip", m)
     noflip_v.append(p)
@@ -384,7 +387,7 @@ if len(results['errors']) == 0:
         xy_flipped=True
 
     ###############################################################################################
-    # y/z test
+    print("running y/z flip test")
     p=0
     m=0
     for i in range(vol_y1.shape[0]):
@@ -408,7 +411,6 @@ if len(results['errors']) == 0:
             m+=1.0
 
     yz_flipped=False
-    print ("yz")
     print ("  noflip", p)
     print ("  flip", m)
     noflip_v.append(p)
@@ -418,7 +420,7 @@ if len(results['errors']) == 0:
         yz_flipped=True
 
     ###############################################################################################
-    # z test
+    print("running x/z flip test")
     #left=0
     #right=0
     p=0
@@ -444,7 +446,6 @@ if len(results['errors']) == 0:
             m+=1.0
         
     xz_flipped=False
-    print ("xz")
     print ("  noflip", p)
     print ("  flip", m)
     noflip_v.append(p)
