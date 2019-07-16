@@ -217,7 +217,6 @@ if len(results['errors']) == 0:
         #re-try with rediculous atol to bypass the check (some data has [0,0,0] vector!
         gtab = gradient_table(bvals, bvecs, atol=1)
 
-
     try:
         print("loading dwi to check bvecs flipping")
         img = nibabel.load(config['dwi'])
@@ -300,203 +299,206 @@ if len(results['errors']) == 0:
         z2_ang = flip_angle(angle_between(bvec, (1,0,-1)))
         angs.append((x1_ang, x2_ang, y1_ang, y2_ang, z1_ang, z2_ang, bvec, bval, idx));
 
-    print("loading data")
-    img_data = img.get_fdata()
+    if len(angs) < 10: #TODO - not sure how small is too small
+        warning("we don't have enough directions to run flip test.. skipping")
+    else:
+        print("loading data for flip test")
+        img_data = img.get_fdata()
 
-    #pull slices for each tests (pick 3 closest to the axis and sum them)
-    angs.sort(key=lambda tup: tup[0])
-    print("pulling slices for x1")
-    vol_x1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        #pull slices for each tests (pick 3 closest to the axis and sum them)
+        angs.sort(key=lambda tup: tup[0])
+        print("pulling slices for x1")
+        vol_x1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    angs.sort(key=lambda tup: tup[1])
-    print("pulling slices for x2")
-    vol_x2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        angs.sort(key=lambda tup: tup[1])
+        print("pulling slices for x2")
+        vol_x2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    angs.sort(key=lambda tup: tup[2])
-    print("pulling slices for y1")
-    vol_y1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        angs.sort(key=lambda tup: tup[2])
+        print("pulling slices for y1")
+        vol_y1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    angs.sort(key=lambda tup: tup[3])
-    print("pulling slices for y2")
-    vol_y2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        angs.sort(key=lambda tup: tup[3])
+        print("pulling slices for y2")
+        vol_y2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    angs.sort(key=lambda tup: tup[4])
-    print("pulling slices for z1")
-    vol_z1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        angs.sort(key=lambda tup: tup[4])
+        print("pulling slices for z1")
+        vol_z1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    angs.sort(key=lambda tup: tup[5])
-    print("pulling slices for z2")
-    vol_z2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        angs.sort(key=lambda tup: tup[5])
+        print("pulling slices for z2")
+        vol_z2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
 
-    noflip_v = []
-    flip_v = []
+        noflip_v = []
+        flip_v = []
 
-    ###############################################################################################
-    # x/y test
-    print("running x/y flip test")
-    #left=0
-    #right=0
-    p=0
-    m=0
-    for i in range(vol_x1.shape[2]):
-        
-        slice1 = vol_x1[:, :, i]
-        slice2 = vol_x2[:, :, i]
-      
-        pos = np.subtract(slice1, slice2).clip(min=0)
-        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
-        neg = np.subtract(slice2, slice1).clip(min=0)
-        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
+        ###############################################################################################
+        # x/y test
+        print("running x/y flip test")
+        #left=0
+        #right=0
+        p=0
+        m=0
+        for i in range(vol_x1.shape[2]):
+            
+            slice1 = vol_x1[:, :, i]
+            slice2 = vol_x2[:, :, i]
+          
+            pos = np.subtract(slice1, slice2).clip(min=0)
+            pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
+            neg = np.subtract(slice2, slice1).clip(min=0)
+            neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-        #if i == img_data.shape[2]/2:
-        #    print("showing", i)
-        #    print(img_data[53,70,50,0])
-        #    import matplotlib.pyplot as plt
-        #    plt.subplot(2,2,1);
-        #    #plt.imshow(pos.T, cmap='gray', origin='low')
-        #    plt.imshow(slice1)
+            #if i == img_data.shape[2]/2:
+            #    print("showing", i)
+            #    print(img_data[53,70,50,0])
+            #    import matplotlib.pyplot as plt
+            #    plt.subplot(2,2,1);
+            #    #plt.imshow(pos.T, cmap='gray', origin='low')
+            #    plt.imshow(slice1)
 
-        #    plt.subplot(2,2,2);
-        #    plt.imshow(pos)
+            #    plt.subplot(2,2,2);
+            #    plt.imshow(pos)
 
-        #    plt.subplot(2,2,3);
-        #    plt.imshow(slice2)
-        #    #plt.imshow(neg.T, cmap='gray', origin='low')
+            #    plt.subplot(2,2,3);
+            #    plt.imshow(slice2)
+            #    #plt.imshow(neg.T, cmap='gray', origin='low')
 
-        #    plt.subplot(2,2,4);
-        #    plt.imshow(neg)
+            #    plt.subplot(2,2,4);
+            #    plt.imshow(neg)
 
-        #    plt.show() 
+            #    plt.show() 
 
-        #high std means image is aligned with the same direction
-        #low std means image is aligned with orthogonal direction
-        #left+=np.std(sum_diag(pos, 1))
-        #right+=np.std(sum_diag(pos, -1))
-        #left+=np.std(sum_diag(neg, -1))
-        #right+=np.std(sum_diag(neg, 1))
+            #high std means image is aligned with the same direction
+            #low std means image is aligned with orthogonal direction
+            #left+=np.std(sum_diag(pos, 1))
+            #right+=np.std(sum_diag(pos, -1))
+            #left+=np.std(sum_diag(neg, -1))
+            #right+=np.std(sum_diag(neg, 1))
 
-        l=np.std(sum_diag(pos, 1))
-        r=np.std(sum_diag(pos, -1))
-        l+=np.std(sum_diag(neg, -1))
-        r+=np.std(sum_diag(neg, 1))
-        if l == r:
-            continue
-        if l<r:
-            p+=1.0
-        else:
-            m+=1.0
+            l=np.std(sum_diag(pos, 1))
+            r=np.std(sum_diag(pos, -1))
+            l+=np.std(sum_diag(neg, -1))
+            r+=np.std(sum_diag(neg, 1))
+            if l == r:
+                continue
+            if l<r:
+                p+=1.0
+            else:
+                m+=1.0
 
-    xy_flipped=False
-    print ("  noflip", p)
-    print ("  flip", m)
-    noflip_v.append(p)
-    flip_v.append(m)
-    if p < m:
-        print("x/y-flipped!")
-        xy_flipped=True
+        xy_flipped=False
+        print ("  noflip", p)
+        print ("  flip", m)
+        noflip_v.append(p)
+        flip_v.append(m)
+        if p < m:
+            print("x/y-flipped!")
+            xy_flipped=True
 
-    ###############################################################################################
-    print("running y/z flip test")
-    p=0
-    m=0
-    for i in range(vol_y1.shape[0]):
-        slice1 = vol_y1[i, :, :]
-        slice2 = vol_y2[i, :, :]
-      
-        pos = np.subtract(slice1, slice2).clip(min=0)
-        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
-        neg = np.subtract(slice2, slice1).clip(min=0)
-        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
+        ###############################################################################################
+        print("running y/z flip test")
+        p=0
+        m=0
+        for i in range(vol_y1.shape[0]):
+            slice1 = vol_y1[i, :, :]
+            slice2 = vol_y2[i, :, :]
+          
+            pos = np.subtract(slice1, slice2).clip(min=0)
+            pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
+            neg = np.subtract(slice2, slice1).clip(min=0)
+            neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-        l=np.std(sum_diag(pos, 1))
-        r=np.std(sum_diag(pos, -1))
-        l+=np.std(sum_diag(neg, -1))
-        r+=np.std(sum_diag(neg, 1))
-        if l == r:
-            continue
-        if l<r:
-            p+=1.0
-        else:
-            m+=1.0
+            l=np.std(sum_diag(pos, 1))
+            r=np.std(sum_diag(pos, -1))
+            l+=np.std(sum_diag(neg, -1))
+            r+=np.std(sum_diag(neg, 1))
+            if l == r:
+                continue
+            if l<r:
+                p+=1.0
+            else:
+                m+=1.0
 
-    yz_flipped=False
-    print ("  noflip", p)
-    print ("  flip", m)
-    noflip_v.append(p)
-    flip_v.append(m)
-    if p < m:
-        print("y/z-flipped!")
-        yz_flipped=True
+        yz_flipped=False
+        print ("  noflip", p)
+        print ("  flip", m)
+        noflip_v.append(p)
+        flip_v.append(m)
+        if p < m:
+            print("y/z-flipped!")
+            yz_flipped=True
 
-    ###############################################################################################
-    print("running x/z flip test")
-    #left=0
-    #right=0
-    p=0
-    m=0
-    for i in range(vol_z1.shape[1]):
-        slice1 = vol_z1[:, i, :]
-        slice2 = vol_z2[:, i, :]
-     
-        pos = np.subtract(slice1, slice2).clip(min=0)
-        pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
-        neg = np.subtract(slice2, slice1).clip(min=0)
-        neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
+        ###############################################################################################
+        print("running x/z flip test")
+        #left=0
+        #right=0
+        p=0
+        m=0
+        for i in range(vol_z1.shape[1]):
+            slice1 = vol_z1[:, i, :]
+            slice2 = vol_z2[:, i, :]
+         
+            pos = np.subtract(slice1, slice2).clip(min=0)
+            pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
+            neg = np.subtract(slice2, slice1).clip(min=0)
+            neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-        l=np.std(sum_diag(pos, 1))
-        r=np.std(sum_diag(pos, -1))
-        l+=np.std(sum_diag(neg, -1))
-        r+=np.std(sum_diag(neg, 1))
-        if l == r:
-            continue
-        if l<r:
-            p+=1.0
-        else:
-            m+=1.0
-        
-    xz_flipped=False
-    print ("  noflip", p)
-    print ("  flip", m)
-    noflip_v.append(p)
-    flip_v.append(m)
-    if p < m:
-        print("x/z-flipped!")
-        xz_flipped=True
+            l=np.std(sum_diag(pos, 1))
+            r=np.std(sum_diag(pos, -1))
+            l+=np.std(sum_diag(neg, -1))
+            r+=np.std(sum_diag(neg, 1))
+            if l == r:
+                continue
+            if l<r:
+                p+=1.0
+            else:
+                m+=1.0
+            
+        xz_flipped=False
+        print ("  noflip", p)
+        print ("  flip", m)
+        noflip_v.append(p)
+        flip_v.append(m)
+        if p < m:
+            print("x/z-flipped!")
+            xz_flipped=True
 
-    if not xy_flipped and not yz_flipped and not xz_flipped:
-        print("no flip!")
-        #results['brainlife'].append({"type": "info", "msg": "bvecs directions look good!"})
+        if not xy_flipped and not yz_flipped and not xz_flipped:
+            print("no flip!")
+            #results['brainlife'].append({"type": "info", "msg": "bvecs directions look good!"})
 
-    if xy_flipped and xz_flipped:
-        print("x is flipped !")
-        warning("bvecs-x seems to be flipped.")
-    if xy_flipped and yz_flipped:
-        print("y is flipped !")
-        warning("bvecs-y seems to be flipped.")
-    if yz_flipped and xz_flipped:
-        print("z is flipped !")
-        warning("bvecs-z seems to be flipped.")
+        if xy_flipped and xz_flipped:
+            print("x is flipped !")
+            warning("bvecs-x seems to be flipped.")
+        if xy_flipped and yz_flipped:
+            print("y is flipped !")
+            warning("bvecs-y seems to be flipped.")
+        if yz_flipped and xz_flipped:
+            print("z is flipped !")
+            warning("bvecs-z seems to be flipped.")
 
-    #output results in plotly graph
-    x_labels = ['x/y', 'y/z',  'x/z']
-    noflip = {
-        'type': 'bar',
-        'name': 'No Flip',
-        'x': x_labels,
-        'y': noflip_v,
-    }
-    flip = {
-        'type': 'bar',
-        'name': 'Flip',
-        'x': x_labels,
-        'y': flip_v,
-    }
-    results['brainlife'].append({
-        'type': 'plotly',
-        'name': 'Flip Evidence',
-        'layout': {},
-        'data': [noflip, flip],
-    })
+        #output results in plotly graph
+        x_labels = ['x/y', 'y/z',  'x/z']
+        noflip = {
+            'type': 'bar',
+            'name': 'No Flip',
+            'x': x_labels,
+            'y': noflip_v,
+        }
+        flip = {
+            'type': 'bar',
+            'name': 'Flip',
+            'x': x_labels,
+            'y': flip_v,
+        }
+        results['brainlife'].append({
+            'type': 'plotly',
+            'name': 'Flip Evidence',
+            'layout': {},
+            'data': [noflip, flip],
+        })
 
     #create bvecs vis .. sort into shells (100th)
     shells = {}
@@ -507,11 +509,6 @@ if len(results['errors']) == 0:
         if shell not in shells:
             shells[shell] = []
         shells[shell].append((i, bval, bvec*bval))
-
-    #simulate bvecs flipping
-    #for bvec in bvecs:
-    #    bvec[0] = -bvec[0]
-    #    bvec[1] = -bvec[1]
 
     #output into plotly format
     data = []
