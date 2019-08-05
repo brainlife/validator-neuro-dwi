@@ -1,5 +1,8 @@
 {
-    "dwi": "testdata/dwi.nii.gz",
+    "dwi-phy": "testdata/POKIDOVA_diffusion.nii.gz", 
+    "bvecs-phy": "testdata/POKIDOVA_diffusion.bvecs",
+    "bvals-phy": "testdata/POKIDOVA_diffusion.bvals",
+    "dwi": "testdata/dwi.nii.gz", 
     "bvecs": "testdata/dwi.bvecs",
     "bvals": "testdata/dwi.bvals"
 }

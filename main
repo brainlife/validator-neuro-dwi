@@ -62,7 +62,7 @@ with open('config.json') as config_json:
     config = json.load(config_json)
 
 results = {"errors": [], "warnings": [], "brainlife": [], "datatype_tags": [], "tags": []}
-directions = None
+#directions = None
 gtab = None
 
 def warning(msg):
@@ -114,99 +114,100 @@ if config['bvals'] is None:
     error("bvals not set")
 
 if len(results['errors']) == 0:
-    try:
-        print("validating bvecs")
-        bvecs = open(config['bvecs'])
-        bvecs_rows = bvecs.readlines()
-        bvecs_cols = bvecs_rows[0].strip().replace(",", " ").replace("\t", " ")
+#    try:
+#        print("validating bvecs")
+#        bvecs = open(config['bvecs'])
+#        bvecs_rows = bvecs.readlines()
+#        bvecs_cols = bvecs_rows[0].strip().replace(",", " ").replace("\t", " ")
+#
+#        # remove double spaces
+#        bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols)
+#        bvecs_cols = bvecs_cols_clean.split(' ')
+#        directions = len(bvecs_cols)
+#
+#        # check 4d size
+#        if directions < 10:
+#            warning("direction seems too small.." + str(directions))
+#
+#        # bvecs should have 3 row
+#        if len(bvecs_rows) != 3:
+#            error("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
+#
+#        # write out bvecs (write in FSL format - space delimited)
+#        f = open('dwi.bvecs', 'w')
+#        for row in bvecs_rows:
+#            row = row.strip().replace(",", " ").replace("\t", " ")
+#            row_clean = re.sub(' +', ' ', row)
+#
+#            f.write(row_clean)
+#            f.write("\n")
+#
+#            #check to make sure all values are float
+#            for v in row_clean.split(' '):
+#                if not isFloat(v):
+#                    error("bvecs contains non float:" +v)
+#
+#        f.close();
+#
+#    except IOError:
+#        print("failed to load bvecs:" + config['bvecs'])
+#        error("Couldn't read bvecs")
+#
+#    try:
+#        print("validating bvals")
+#        bvals = open(config['bvals'])
+#        bvals_rows = bvals.readlines()
+#        bvals_cols = bvals_rows[0].strip().replace(",", " ").replace("\t", " ").replace("\n", " ")
+#
+#        # remove double spaces
+#        bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
+#
+#        print(bvals_cols_clean)
+#        # convert bvals to int
+#        bvals_cols_cleanint = []
+#        for bval in bvals_cols_clean.split(" "):
+#            bvals_cols_cleanint.append(str(int(round(float(bval), 0))))
+#        bvals_cols_clean = " ".join(bvals_cols_cleanint)
+#
+#        bvals_cols = bvals_cols_clean.split(" ")
+#
+#        if directions != len(bvals_cols):
+#            error(
+#                "bvals column count which is " + str(len(bvals_cols)) + " doesn't match dwi's 4d number:" + str(
+#                    directions))
+#
+#        if len(bvals_rows) != 1:
+#            error("bvals should have 1 row but it has " + str(len(bvals_rows)))
+#
+#        # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
+#        unique_bvals = list(set(bvals_cols))
+#        bvalues = list(set(bvals_cols))
+#
+#        # is normalized?
+#        normalized = True
+#        for bvalue in bvalues:
+#            if float(bvalue) != round(float(bvalue), -2):
+#                normalized = False
+#        if normalized:
+#            results['datatype_tags'].append("normalized")
+#
+#        # is single shell?
+#        if len(bvalues) <= 2:
+#            results['datatype_tags'].append("single_shell")
+#            results['tags'].append("b" + str(bvalues[1]))
+#
+#        # write out normalized bvals (write in FSL format - space delimited)
+#        f = open('dwi.bvals', 'w')
+#        f.write(bvals_cols_clean)
+#        f.write("\n")
+#        f.close()
+#
+#    except IOError:
+#        print("failed to load bvals:" + config['bvals'])
+#        error("Couldn't read bvals")
 
-        # remove double spaces
-        bvecs_cols_clean = re.sub(' +', ' ', bvecs_cols)
-        bvecs_cols = bvecs_cols_clean.split(' ')
-        directions = len(bvecs_cols)
-
-        # check 4d size
-        if directions < 10:
-            warning("direction seems too small.." + str(directions))
-
-        # bvecs should have 3 row
-        if len(bvecs_rows) != 3:
-            error("bvecs should have 3 rows but it has " + str(len(bvecs_rows)))
-
-        # write out bvecs (write in FSL format - space delimited)
-        f = open('dwi.bvecs', 'w')
-        for row in bvecs_rows:
-            row = row.strip().replace(",", " ").replace("\t", " ")
-            row_clean = re.sub(' +', ' ', row)
-
-            f.write(row_clean)
-            f.write("\n")
-
-            #check to make sure all values are float
-            for v in row_clean.split(' '):
-                if not isFloat(v):
-                    error("bvecs contains non float:" +v)
-
-        f.close();
-
-    except IOError:
-        print("failed to load bvecs:" + config['bvecs'])
-        error("Couldn't read bvecs")
-
-    try:
-        print("validating bvals")
-        bvals = open(config['bvals'])
-        bvals_rows = bvals.readlines()
-        bvals_cols = bvals_rows[0].strip().replace(",", " ").replace("\t", " ")
-
-        # remove double spaces
-        bvals_cols_clean = re.sub(' +', ' ', bvals_cols)
-
-        # convert bvals to int
-        bvals_cols_cleanint = []
-        for bval in bvals_cols_clean.split(" "):
-            bvals_cols_cleanint.append(str(int(round(float(bval), 0))))
-        bvals_cols_clean = " ".join(bvals_cols_cleanint)
-
-        bvals_cols = bvals_cols_clean.split(" ")
-
-        if directions != len(bvals_cols):
-            error(
-                "bvals column count which is " + str(len(bvals_cols)) + " doesn't match dwi's 4d number:" + str(
-                    directions))
-
-        if len(bvals_rows) != 1:
-            error("bvals should have 1 row but it has " + str(len(bvals_rows)))
-
-        # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
-        unique_bvals = list(set(bvals_cols))
-        bvalues = list(set(bvals_cols))
-
-        # is normalized?
-        normalized = True
-        for bvalue in bvalues:
-            if float(bvalue) != round(float(bvalue), -2):
-                normalized = False
-        if normalized:
-            results['datatype_tags'].append("normalized")
-
-        # is single shell?
-        if len(bvalues) <= 2:
-            results['datatype_tags'].append("single_shell")
-            results['tags'].append("b" + str(bvalues[1]))
-
-        # write out normalized bvals (write in FSL format - space delimited)
-        f = open('dwi.bvals', 'w')
-        f.write(bvals_cols_clean)
-        f.write("\n")
-        f.close()
-
-    except IOError:
-        print("failed to load bvals:" + config['bvals'])
-        error("Couldn't read bvals")
-
-    print("analyzing bvecs/bvals")
-    bvals, bvecs = read_bvals_bvecs('dwi.bvals', 'dwi.bvecs')
+    print("loading bvecs/bvals with dipy.io")
+    bvals, bvecs = read_bvals_bvecs(config["bvals"], config["bvecs"])
     try: 
         gtab = gradient_table(bvals, bvecs)
         #results['gtab_info'] = gtab.info #set to Null somehwo
@@ -216,6 +217,54 @@ if len(results['errors']) == 0:
 
         #re-try with rediculous atol to bypass the check (some data has [0,0,0] vector!
         gtab = gradient_table(bvals, bvecs, atol=1)
+
+    # write out bvecs (write in FSL format - space delimited)
+    x = ""
+    y = ""
+    z = ""
+    for bvec in bvecs:
+        if x != "":
+            x += " "
+        if y != "":
+            y += " "
+        if z != "":
+            z += " "
+        x += str(bvec[0])
+        y += str(bvec[1])
+        z += str(bvec[2])
+    f = open('dwi.bvecs', 'w')
+    f.write(x+"\n")
+    f.write(y+"\n")
+    f.write(z+"\n")
+    f.close()
+
+    #round bvals
+    bvals = [int(round(x)) for x in bvals]
+
+    #write out bvals (round to an integer)
+    print(str(bvals))
+    f = open('dwi.bvals', 'w')
+    f.write(" ".join(str(x) for x in bvals))
+    f.close()
+
+    #reload bvals/bvecs just written to make sure it's still good (mainly for debugging)
+    bvals_check, bvecs_check = read_bvals_bvecs("dwi.bvals", "dwi.bvecs")
+
+    # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
+    bvalues = list(set(bvals))
+
+    # is normalized?
+    normalized = True
+    for bvalue in bvalues:
+        if float(bvalue) != round(float(bvalue), -2):
+            normalized = False
+    if normalized:
+        results['datatype_tags'].append("normalized")
+
+    # is single shell?
+    if len(bvalues) <= 2:
+        results['datatype_tags'].append("single_shell")
+        results['tags'].append("b" + str(bvalues[1]))
 
     try:
         print("loading dwi to check bvecs flipping")
@@ -247,8 +296,8 @@ if len(results['errors']) == 0:
             error("DWI should be 4D but has " + str(dims))
 
         # 4d should have same col num as bvecs/bval directions
-        if directions != img.header['dim'][4]:
-            error("bvecs column count which is " + str(img.header['dim'][4]) + " doesn't match bvecs col counts:" + str(directions))
+        #if directions != img.header['dim'][4]:
+        #    error("bvecs column count which is " + str(img.header['dim'][4]) + " doesn't match bvecs col counts:" + str(directions))
 
         # check affine
         check_affine(img.header.get_base_affine())
@@ -267,7 +316,7 @@ if len(results['errors']) == 0:
     #
     #find the most common bvals (most likely to find the right directions)
     #TODO if if there are near identical number of bvalues, should I use higher bvalue?
-    b=most_common(bvals.tolist())
+    b=most_common(bvals)
     print("bvalue for flip check: %d" % b)
     
     #calculate bvecs angle from various reference angles
