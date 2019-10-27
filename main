@@ -8,6 +8,7 @@ import nibabel
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from scipy.ndimage import zoom
+from PIL import Image
 
 import math
 import numpy as np
@@ -103,6 +104,29 @@ def get_change(current, previous):
         return (abs(current - previous) / previous) * 100.0
     except ZeroDivisionError:
         return 0
+
+def fix_level(image):
+    image = image - image.mean(axis=0)
+    image_max = np.max(image)
+    return (image / image_max)*300
+
+def generate_sample(slice1, slice2):
+    slice1 = fix_level(slice1).T
+    slice2 = fix_level(slice2).T
+
+    pos = np.subtract(slice1, slice2).clip(min=0)*2
+    neg = np.subtract(slice2, slice1).clip(min=0)*2
+
+    image1_and_pos = Image.fromarray(slice1 + pos*2).convert('L')
+    image2_and_neg = Image.fromarray(slice2 + neg*2).convert('L')
+
+    image1 = Image.fromarray(slice1).convert('L')
+    image2 = Image.fromarray(slice2).convert('L')
+
+    image1_annotated = Image.merge('RGB', (image1_and_pos, image1, image1))
+    image2_annotated = Image.merge('RGB', (image2_and_neg, image2, image2))
+
+    return (image1_annotated.convert('RGB'), image2_annotated.convert('RGB'))
 
 print("checking input paramerters")
 if config['dwi'] is None:
@@ -290,22 +314,20 @@ if len(results['errors']) == 0:
         ###############################################################################################
         # x/y test
         print("running x/y flip test")
-        #left=0
-        #right=0
+
         p=0
         m=0
-
-        #from PIL import Image
-
-        print(vol_x1.shape)
-        vol_x1 = zoom(vol_x1, (1, 1, 1.75))
-        print(vol_x1.shape)
-        vol_x2 = zoom(vol_x2, (1, 1, 1.75))
-
+        mid=int(vol_x1.shape[2]/2)
         for i in range(vol_x1.shape[2]):
             
             slice1 = vol_x1[:, :, i]
             slice2 = vol_x2[:, :, i]
+
+            #generate sample
+            if i == mid:
+                (image1, image2) = generate_sample(slice1, slice2)
+                image1.save('xy1.png')
+                image2.save('xy2.png')
           
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
@@ -321,9 +343,10 @@ if len(results['errors']) == 0:
             if l<r:
                 p+=1.0
             else:
+                m+=1.0
+
                 #img = Image.fromarray(slice1, 'RGB')
                 #img.save('vol_x1.pos_%d.png' % (i))
-                m+=1.0
 
         xy_flipped=False
         print ("  noflip", p)
@@ -335,12 +358,26 @@ if len(results['errors']) == 0:
             xy_flipped=True
 
         ###############################################################################################
+        ###############################################################################################
+
         print("running y/z flip test")
+
         p=0
         m=0
+        mid=int(vol_y1.shape[0]/2)
         for i in range(vol_y1.shape[0]):
             slice1 = vol_y1[i, :, :]
             slice2 = vol_y2[i, :, :]
+
+            #generate sample
+            if i == mid:
+                (image1, image2) = generate_sample(np.fliplr(slice1), np.fliplr(slice2))
+                image1.save('yz1.png')
+                image2.save('yz2.png')
+            #else:
+            #    (image1, image2) = generate_sample(slice1, slice2)
+            #    image1.save('yz1.'+str(i)+'.png')
+            #    image2.save('yz2.'+str(i)+'.png')
           
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
@@ -371,11 +408,18 @@ if len(results['errors']) == 0:
         print("running x/z flip test")
         #left=0
         #right=0
+
         p=0
         m=0
+        mid=int(vol_z1.shape[1]/2)
         for i in range(vol_z1.shape[1]):
             slice1 = vol_z1[:, i, :]
             slice2 = vol_z2[:, i, :]
+
+            if i == mid:
+                (image1, image2) = generate_sample(np.fliplr(slice1), np.fliplr(slice2))
+                image1.save('xz1.png')
+                image2.save('xz2.png')
          
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
