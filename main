@@ -8,10 +8,13 @@ import nibabel
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from scipy.ndimage import zoom
-from PIL import Image
+from PIL import Image, ImageDraw
 
 import math
 import numpy as np
+
+from json import encoder
+encoder.FLOAT_REPR = lambda o: format(o, '.2f')
 
 # display where this is running (debug?)
 import socket
@@ -125,6 +128,11 @@ def generate_sample(slice1, slice2):
 
     image1_annotated = Image.merge('RGB', (image1_and_pos, image1, image1))
     image2_annotated = Image.merge('RGB', (image2_and_neg, image2, image2))
+
+    draw1 = ImageDraw.Draw(image1_annotated)
+    draw1.text((10, 10), "Should see features in /") 
+    draw2 = ImageDraw.Draw(image2_annotated)
+    draw2.text((10, 10), "Should see features in \\") 
 
     return (image1_annotated.convert('RGB'), image2_annotated.convert('RGB'))
 
@@ -311,6 +319,13 @@ if len(results['errors']) == 0:
         noflip_v = []
         flip_v = []
 
+        xy_scores_f = []
+        xy_scores_nf = []
+        yz_scores_f = []
+        yz_scores_nf = []
+        xz_scores_f = []
+        xz_scores_nf = []
+
         ###############################################################################################
         # x/y test
         print("running x/y flip test")
@@ -338,15 +353,15 @@ if len(results['errors']) == 0:
             r=np.std(sum_diag(pos, -1))
             l+=np.std(sum_diag(neg, -1))
             r+=np.std(sum_diag(neg, 1))
-            if l == r:
-                continue
-            if l<r:
+
+            if l<=r:
                 p+=1.0
+                xy_scores_f.append(None)
+                xy_scores_nf.append(r-l)
             else:
                 m+=1.0
-
-                #img = Image.fromarray(slice1, 'RGB')
-                #img.save('vol_x1.pos_%d.png' % (i))
+                xy_scores_f.append(r-l)
+                xy_scores_nf.append(None)
 
         xy_flipped=False
         print ("  noflip", p)
@@ -388,12 +403,15 @@ if len(results['errors']) == 0:
             r=np.std(sum_diag(pos, -1))
             l+=np.std(sum_diag(neg, -1))
             r+=np.std(sum_diag(neg, 1))
-            if l == r:
-                continue
-            if l<r:
+
+            if l<=r:
                 p+=1.0
+                yz_scores_f.append(None)
+                yz_scores_nf.append(r-l)
             else:
                 m+=1.0
+                yz_scores_f.append(r-l)
+                yz_scores_nf.append(None)
 
         yz_flipped=False
         print ("  noflip", p)
@@ -416,6 +434,7 @@ if len(results['errors']) == 0:
             slice1 = vol_z1[:, i, :]
             slice2 = vol_z2[:, i, :]
 
+            #store sample image
             if i == mid:
                 (image1, image2) = generate_sample(np.fliplr(slice1), np.fliplr(slice2))
                 image1.save('xz1.png')
@@ -430,12 +449,15 @@ if len(results['errors']) == 0:
             r=np.std(sum_diag(pos, -1))
             l+=np.std(sum_diag(neg, -1))
             r+=np.std(sum_diag(neg, 1))
-            if l == r:
-                continue
-            if l<r:
+
+            if l<=r:
                 p+=1.0
+                xz_scores_f.append(None)
+                xz_scores_nf.append(r-l)
             else:
                 m+=1.0
+                xz_scores_f.append(r-l)
+                xz_scores_nf.append(None)
             
         xz_flipped=False
         print ("  noflip", p)
@@ -477,8 +499,99 @@ if len(results['errors']) == 0:
         results['brainlife'].append({
             'type': 'plotly',
             'name': 'Flip Evidence',
+            'desc': 'All axies should show more no-flip evidence. The more apart the flip v.s. no-flip evidence is, the better image quality.',
             'layout': {},
             'data': [noflip, flip],
+        })
+
+        #add xy scores
+        results['brainlife'].append({
+            'type': 'plotly',
+            'name': 'Feature stddev (x/y)',
+            'desc': 'stddev computed for each slices in Z axis',
+            'layout': {
+                'barmode': 'stack',
+                'xaxis': {
+                    'title': 'z-voxel index'
+                },
+                'yaxis': {
+                    'title': 'orientation correctness'
+                }
+            },
+            'data': [
+                {
+                    'type': 'bar',
+                    'name': 'no-flip',
+                    #'x': x_labels, #0:i
+                    'y': xy_scores_nf,
+                },
+                {
+                    'type': 'bar',
+                    'name': 'flip',
+                    #'x': x_labels, #0:i
+                    'y': xy_scores_f,
+                }
+            ],
+        })
+
+        #add yz scores
+        results['brainlife'].append({
+            'type': 'plotly',
+            'name': 'Feature stddev (yz)',
+            'desc': 'stddev computed for each slices in X axis',
+            'layout': {
+                'barmode': 'stack',
+                'xaxis': {
+                    'title': 'x-voxel index'
+                },
+                'yaxis': {
+                    'title': 'orientation correctness'
+                }
+            },
+            'data': [
+                {
+                    'type': 'bar',
+                    'name': 'no-flip',
+                    #'x': x_labels, #0:i
+                    'y': yz_scores_nf,
+                },
+                {
+                    'type': 'bar',
+                    'name': 'flip',
+                    #'x': x_labels, #0:i
+                    'y': yz_scores_f,
+                }
+            ],
+        })
+
+        #add xz scores
+        results['brainlife'].append({
+            'type': 'plotly',
+            'name': 'Feature stddev (xz)',
+            'desc': 'stddev computed for each slices in Y axis',
+            'layout': {
+                'barmode': 'stack',
+                'xaxis': {
+                    'title': 'y-voxel index'
+                },
+                'yaxis': {
+                    'title': 'orientation correctness'
+                }
+            },
+            'data': [
+                {
+                    'type': 'bar',
+                    'name': 'no-flip',
+                    #'x': x_labels, #0:i
+                    'y': xz_scores_nf,
+                },
+                {
+                    'type': 'bar',
+                    'name': 'flip',
+                    #'x': x_labels, #0:i
+                    'y': xz_scores_f,
+                }
+            ],
         })
 
     #create bvecs vis .. sort into shells (100th)
@@ -537,7 +650,6 @@ if len(results['errors']) == 0:
         'layout': {},
         'data': data,
     })
-
 
 with open("product.json", "w") as fp:
     json.dump(results, fp)

@@ -1,0 +1,25 @@
+<html>
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        async function load() {
+            const res = await fetch('product.json');
+            const json = await res.json();
+            console.dir(json);
+
+            Plotly.newPlot('evidence',  json.brainlife[3]);
+            Plotly.newPlot('xy_score',  json.brainlife[4]);
+            Plotly.newPlot('yz_score',  json.brainlife[5]);
+            Plotly.newPlot('xz_score',  json.brainlife[6]);
+        }
+        load();
+    </script>
+</head>
+<body>
+    <div id="evidence" style="width:800px;height:500px;"></div>
+    <div id="xy_score" style="width:800px;height:500px;"></div>
+    <div id="yz_score" style="width:800px;height:500px;"></div>
+    <div id="xz_score" style="width:800px;height:500px;"></div>
+</body>
+</html>
+
