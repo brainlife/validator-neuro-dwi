@@ -248,10 +248,13 @@ if len(results['errors']) == 0:
         # check affine
         check_affine(img.header.get_base_affine())
 
+        if not os.path.exists("output"):
+            os.mkdir("output")
+
         #create symlink
-        if(os.path.islink('dwi.nii.gz')):
-            os.unlink('dwi.nii.gz')
-        os.symlink(config['dwi'], "dwi.nii.gz")
+        if(os.path.islink('output/dwi.nii.gz')):
+            os.remove('output/dwi.nii.gz')
+        os.symlink("../"+config['dwi'], "output/dwi.nii.gz")
 
     except Exception as e:
         error("nibabel failed on dwi. error code: " + str(e))
