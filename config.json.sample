@@ -1,6 +1,6 @@
 {
-    "dwi": "testdata/5d88ef039842206ab87ec0c3/dwi.nii.gz",
-    "bvecs": "testdata/5d88ef039842206ab87ec0c3/dwi.bvecs",
-    "bvals": "testdata/5d88ef039842206ab87ec0c3/dwi.bvals"
+    "dwi": "testdata/spade-sub104/SUB104_DTI_high_iso_20191114224652_303002.nii.gz",
+    "bvecs": "testdata/spade-sub104/SUB104_DTI_high_iso_20191114224652_303002.bvec",
+    "bvals": "testdata/spade-sub104/SUB104_DTI_high_iso_20191114224652_303002.bval"
 }
 

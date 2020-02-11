@@ -4,3 +4,5 @@ barn
 testdata
 dwi.*
 *.png
+product.json
+sort.py
