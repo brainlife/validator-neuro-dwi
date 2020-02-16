@@ -172,7 +172,11 @@ if len(results['errors']) == 0:
         x += str(bvec[0])
         y += str(bvec[1])
         z += str(bvec[2])
-    f = open('dwi.bvecs', 'w')
+
+    if not os.path.exists("output"):
+        os.mkdir("output")
+
+    f = open('output/dwi.bvecs', 'w')
     f.write(x+"\n")
     f.write(y+"\n")
     f.write(z+"\n")
@@ -183,12 +187,12 @@ if len(results['errors']) == 0:
 
     #write out bvals (round to an integer)
     #print(str(bvals))
-    f = open('dwi.bvals', 'w')
+    f = open('output/dwi.bvals', 'w')
     f.write(" ".join(str(x) for x in bvals))
     f.close()
 
     #reload bvals/bvecs just written to make sure it's still good (mainly for debugging)
-    bvals_check, bvecs_check = read_bvals_bvecs("dwi.bvals", "dwi.bvecs")
+    bvals_check, bvecs_check = read_bvals_bvecs("output/dwi.bvals", "output/dwi.bvecs")
 
     # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
     bvalues = list(set(bvals))
@@ -247,9 +251,6 @@ if len(results['errors']) == 0:
 
         # check affine
         check_affine(img.header.get_base_affine())
-
-        if not os.path.exists("output"):
-            os.mkdir("output")
 
         #create symlink
         if(os.path.islink('output/dwi.nii.gz')):
