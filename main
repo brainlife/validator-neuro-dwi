@@ -7,11 +7,12 @@ import subprocess
 import nibabel
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from scipy.ndimage import zoom
 from PIL import Image, ImageDraw
 
 import math
 import numpy as np
+
+from scipy.ndimage import zoom
 
 from json import encoder
 encoder.FLOAT_REPR = lambda o: format(o, '.2f')
@@ -222,6 +223,13 @@ if len(results['errors']) == 0:
         results['dwi_headers'] = str(img.header) #need to str() so that we can save it to product.json
         results['dwi_affine'] = str(img.affine) #need to str() as array is not serializable
 
+        dimX = img.header["pixdim"][1]
+        dimY = img.header["pixdim"][2]
+        dimZ = img.header["pixdim"][3]
+        #dimD = img.header["pixdim"][4]
+        if abs(dimX - dimY) > dimX*0.1 or abs(dimX - dimZ) > dimX*0.1 or abs(dimY - dimZ) > dimX*0.1:
+            warning("pixdim is not close to isomorphic.. some dwi processing might fail")
+
         #print(img.header['pixdim']) #[1.        1.75      1.75      2.0000286 1.     ...
         results['meta'] = {
             "dim":img.header['dim'].tolist(),
@@ -345,9 +353,11 @@ if len(results['errors']) == 0:
         m=0
         mid=int(vol_x1.shape[2]/2)
         for i in range(vol_x1.shape[2]):
-            
-            slice1 = vol_x1[:, :, i]
-            slice2 = vol_x2[:, :, i]
+            slice1 = vol_x1[:, :, i].astype('float32')
+            slice2 = vol_x2[:, :, i].astype('float32')
+
+            slice1 = zoom(slice1, [dimX, dimY])
+            slice2 = zoom(slice2, [dimX, dimY])
 
             #generate sample
             if i == mid:
@@ -360,10 +370,10 @@ if len(results['errors']) == 0:
             neg = np.subtract(slice2, slice1).clip(min=0)
             neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-            l=np.std(sum_diag(pos, 1))
-            r=np.std(sum_diag(pos, -1))
-            l+=np.std(sum_diag(neg, -1))
-            r+=np.std(sum_diag(neg, 1))
+            l=np.max(sum_diag(pos, 1))
+            r=np.max(sum_diag(pos, -1))
+            l+=np.max(sum_diag(neg, -1))
+            r+=np.max(sum_diag(neg, 1))
 
             if l<=r:
                 p+=1.0
@@ -392,8 +402,11 @@ if len(results['errors']) == 0:
         m=0
         mid=int(vol_y1.shape[0]/2)
         for i in range(vol_y1.shape[0]):
-            slice1 = vol_y1[i, :, :]
-            slice2 = vol_y2[i, :, :]
+            slice1 = vol_y1[i, :, :].astype('float32')
+            slice2 = vol_y2[i, :, :].astype('float32')
+
+            slice1 = zoom(slice1, [dimX, dimY])
+            slice2 = zoom(slice2, [dimX, dimY])
 
             #generate sample
             if i == mid:
@@ -410,10 +423,10 @@ if len(results['errors']) == 0:
             neg = np.subtract(slice2, slice1).clip(min=0)
             neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-            l=np.std(sum_diag(pos, 1))
-            r=np.std(sum_diag(pos, -1))
-            l+=np.std(sum_diag(neg, -1))
-            r+=np.std(sum_diag(neg, 1))
+            l=np.max(sum_diag(pos, 1))
+            r=np.max(sum_diag(pos, -1))
+            l+=np.max(sum_diag(neg, -1))
+            r+=np.max(sum_diag(neg, 1))
 
             if l<=r:
                 p+=1.0
@@ -442,8 +455,11 @@ if len(results['errors']) == 0:
         m=0
         mid=int(vol_z1.shape[1]/2)
         for i in range(vol_z1.shape[1]):
-            slice1 = vol_z1[:, i, :]
-            slice2 = vol_z2[:, i, :]
+            slice1 = vol_z1[:, i, :].astype('float32')
+            slice2 = vol_z2[:, i, :].astype('float32')
+
+            slice1 = zoom(slice1, [dimX, dimY])
+            slice2 = zoom(slice2, [dimX, dimY])
 
             #store sample image
             if i == mid:
@@ -456,10 +472,10 @@ if len(results['errors']) == 0:
             neg = np.subtract(slice2, slice1).clip(min=0)
             neg=np.pad(neg, ((0,0),(0, neg.shape[0])), 'constant')
 
-            l=np.std(sum_diag(pos, 1))
-            r=np.std(sum_diag(pos, -1))
-            l+=np.std(sum_diag(neg, -1))
-            r+=np.std(sum_diag(neg, 1))
+            l=np.max(sum_diag(pos, 1))
+            r=np.max(sum_diag(pos, -1))
+            l+=np.max(sum_diag(neg, -1))
+            r+=np.max(sum_diag(neg, 1))
 
             if l<=r:
                 p+=1.0
