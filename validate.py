@@ -147,8 +147,8 @@ if len(results['errors']) == 0:
     bvals, bvecs = read_bvals_bvecs(config["bvals"], config["bvecs"])
     try: 
         gtab = gradient_table(bvals, bvecs)
-    except ValueError,e:
-        warning(str(e))
+    except ValueError as err:
+        warning(str(err))
 
         #re-try with rediculous atol to bypass the check (some data has [0,0,0] vector!
         print("... failed to parse bvals/bvecs.. trying with atol=1")
@@ -255,8 +255,8 @@ if len(results['errors']) == 0:
             os.remove('output/dwi.nii.gz')
         os.symlink("../"+config['dwi'], "output/dwi.nii.gz")
 
-    except Exception as e:
-        error("nibabel failed on dwi. error code: " + str(e))
+    except Exception as err:
+        error("nibabel failed on dwi. error code: " + str(err))
 
     ###############################################################################################
     #
@@ -666,5 +666,5 @@ with open("product.json", "w") as fp:
     json.dump(results, fp)
 
 if len(results["errors"]) > 0:
-    print "test failed"
+    print("test failed")
 
