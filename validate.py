@@ -74,13 +74,13 @@ gtab = None
 def warning(msg):
     global results
     results['warnings'].append(msg) 
-    results['brainlife'].append({"type": "warning", "msg": msg}) 
+    #results['brainlife'].append({"type": "warning", "msg": msg}) 
     print(msg)
 
 def error(msg):
     global results
     results['errors'].append(msg) 
-    results['brainlife'].append({"type": "error", "msg": msg}) 
+    #results['brainlife'].append({"type": "error", "msg": msg}) 
     print(msg)
 
 def check_affine(affine):
