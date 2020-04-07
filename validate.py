@@ -172,6 +172,9 @@ if len(results['errors']) == 0:
     if not os.path.exists("output"):
         os.mkdir("output")
 
+    if not os.path.exists("secondary"):
+        os.mkdir("secondary")
+
     f = open('output/dwi.bvecs', 'w')
     f.write(x+"\n")
     f.write(y+"\n")
@@ -352,8 +355,8 @@ if len(results['errors']) == 0:
             #generate sample
             if i == mid:
                 (image1, image2) = generate_sample(slice1, slice2)
-                image1.save('xy1.png')
-                image2.save('xy2.png')
+                image1.save('secondary/xy1.png')
+                image2.save('secondary/xy2.png')
           
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
@@ -400,8 +403,8 @@ if len(results['errors']) == 0:
             #generate sample
             if i == mid:
                 (image1, image2) = generate_sample(np.fliplr(slice1), np.fliplr(slice2))
-                image1.save('yz1.png')
-                image2.save('yz2.png')
+                image1.save('secondary/yz1.png')
+                image2.save('secondary/yz2.png')
           
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
@@ -447,8 +450,8 @@ if len(results['errors']) == 0:
             #store sample image
             if i == mid:
                 (image1, image2) = generate_sample(np.fliplr(slice1), np.fliplr(slice2))
-                image1.save('xz1.png')
-                image2.save('xz2.png')
+                image1.save('secondary/xz1.png')
+                image2.save('secondary/xz2.png')
          
             pos = np.subtract(slice1, slice2).clip(min=0)
             pos=np.pad(pos, ((0,0),(0, pos.shape[0])), 'constant')
