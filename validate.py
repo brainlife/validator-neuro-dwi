@@ -5,6 +5,7 @@ import json
 import re
 import subprocess
 import nibabel
+import shutil
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from PIL import Image, ImageDraw
@@ -191,6 +192,10 @@ if len(results['errors']) == 0:
     #reload bvals/bvecs just written to make sure it's still good (mainly for debugging)
     bvals_check, bvecs_check = read_bvals_bvecs("output/dwi.bvals", "output/dwi.bvecs")
 
+    #copy bvecs/bvals to secondary
+    #shutil.copyfile("output/dwi.bvals", "secondary/dwi.bvals")
+    #shutil.copyfile("output/dwi.bvecs", "secondary/dwi.bvecs")
+
     # analyze single / multi shell (0, 2000 is single. 0,2000,3000 is multi shell)
     bvalues = list(set(bvals))
     bvalues.sort()
@@ -215,8 +220,17 @@ if len(results['errors']) == 0:
         print("loading dwi to check bvecs flipping")
         img = nibabel.load(config['dwi'])
 
-        results['dwi_headers'] = str(img.header) #need to str() so that we can save it to product.json
-        results['dwi_affine'] = str(img.affine) #need to str() as array is not serializable
+        #deprecated.. does bids export still use this?
+        #results['dwi_headers'] = str(img.header) #need to str() so that we can save it to product.json
+        #results['dwi_affine'] = str(img.affine) #need to str() as array is not serializable
+
+        results['meta'] = {}
+        for key in img.header:
+            value = img.header[key]
+            results['meta'][key] = value
+
+        results["bvals"] = bvals
+        results["bvecs"] = bvecs
 
         dimX = img.header["pixdim"][1]
         dimY = img.header["pixdim"][2]
@@ -224,23 +238,23 @@ if len(results['errors']) == 0:
         if abs(dimX - dimY) > dimX*0.1 or abs(dimX - dimZ) > dimX*0.1 or abs(dimY - dimZ) > dimX*0.1:
             warning("pixdim is not close to isomorphic.. some dwi processing might fail")
 
-        results['meta'] = {
-            "dim":img.header['dim'].tolist(),
-            "pixdim":img.header['pixdim'].tolist()
-        }
+        #results['meta'] = {
+        #    "dim":img.header['dim'].tolist(),
+        #    "pixdim":img.header['pixdim'].tolist()
+        #}
         
         #determine storage orientation
         #http://community.mrtrix.org/t/mrconvert-flips-gradients/581/6
         det = np.linalg.det(img.affine)
-        results['dwi_affine_determinant'] = det
+        results["meta"]['dwi_affine_determinant'] = det
         radiological=False
         print("affine determinant", det)
         if det < 0:
             radiological=True
-            results['storage_orientation'] = 'radiological'
+            results["meta"]['storage_orientation'] = 'radiological'
             print('storage_orientation: radiological - matches bvecs orientation')
         else:
-            results['storage_orientation'] = 'neurological'
+            results["meta"]['storage_orientation'] = 'neurological'
             print('storage_orientation: neurological - flipping x')
             warning("storage orientation is neurologial (det>0). Watch out!")
             results['tags'].append("neurological")
@@ -665,8 +679,31 @@ if len(results['errors']) == 0:
         'data': data,
     })
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
+            np.int16, np.int32, np.int64, np.uint8,
+            np.uint16, np.uint32, np.uint64)):
+            ret = int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+            ret = float(obj)
+        elif isinstance(obj, (np.ndarray,)): 
+            ret = obj.tolist()
+        else:
+            ret = json.JSONEncoder.default(self, obj)
+
+        if isinstance(ret, (float)):
+            if math.isnan(ret):
+                ret = None
+
+        if isinstance(ret, (bytes, bytearray)):
+            ret = ret.decode("utf-8")
+
+        return ret
+
+
 with open("product.json", "w") as fp:
-    json.dump(results, fp)
+    json.dump(results, fp, cls=NumpyEncoder)
 
 if len(results["errors"]) > 0:
     print("test failed")
