@@ -9,6 +9,7 @@ import shutil
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from PIL import Image, ImageDraw
+import binascii
 
 import math
 import numpy as np
@@ -142,6 +143,10 @@ if config['bvecs'] is None:
 
 if config['bvals'] is None:
     error("bvals not set")
+
+with open(config['dwi'], 'rb') as test_f:
+    if binascii.hexlify(test_f.read(2)) != b'1f8b':
+        error("dwi doesn't look like gzipped");
 
 if len(results['errors']) == 0:
     print("loading bvecs/bvals with dipy.io")
