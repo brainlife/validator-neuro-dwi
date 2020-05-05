@@ -320,32 +320,34 @@ if len(results['errors']) == 0:
         warning("we don't have enough directions to run flip test.. skipping")
     else:
         print("loading data for flip test")
-        img_data = img.get_fdata()
-
+        #img_data = img.get_fdata()
+        #print(nibabel.is_proxy(img.dataobj))
+        #img_data = np.asanyarray(img.dataobj)
+        
         #pull slices for each tests (pick 3 closest to the axis and sum them)
         angs.sort(key=lambda tup: tup[0])
         print("pulling slices for x1: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][0], angs[1][8], angs[1][0], angs[2][8], angs[2][0]))
-        vol_x1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_x1 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         angs.sort(key=lambda tup: tup[1])
         print("pulling slices for x2: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][1], angs[1][8], angs[1][1], angs[2][8], angs[2][1]))
-        vol_x2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_x2 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         angs.sort(key=lambda tup: tup[2])
         print("pulling slices for y1: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][2], angs[1][8], angs[1][2], angs[2][8], angs[2][2]))
-        vol_y1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_y1 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         angs.sort(key=lambda tup: tup[3])
         print("pulling slices for y2: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][3], angs[1][8], angs[1][3], angs[2][8], angs[2][3]))
-        vol_y2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_y2 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         angs.sort(key=lambda tup: tup[4])
         print("pulling slices for z1: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][4], angs[1][8], angs[1][4], angs[2][8], angs[2][4]))
-        vol_z1 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_z1 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         angs.sort(key=lambda tup: tup[5])
         print("pulling slices for z2: %d(%f) %d(%f) %d(%f)" % (angs[0][8], angs[0][5], angs[1][8], angs[1][5], angs[2][8], angs[2][5]))
-        vol_z2 = img_data[..., angs[0][8]] + img_data[..., angs[1][8]] + img_data[..., angs[2][8]]
+        vol_z2 = img.dataobj[..., angs[0][8]] + img.dataobj[..., angs[1][8]] + img.dataobj[..., angs[2][8]]
 
         noflip_v = []
         flip_v = []
