@@ -229,10 +229,11 @@ if len(results['errors']) == 0:
         #results['dwi_headers'] = str(img.header) #need to str() so that we can save it to product.json
         #results['dwi_affine'] = str(img.affine) #need to str() as array is not serializable
 
-        results['meta'] = {}
+        results['meta'] = {'nifti_headers': {}}
         for key in img.header:
             value = img.header[key]
-            results['meta'][key] = value
+            results['meta']['nifti_headers'][key] = value
+        results['meta']['nifti_headers']['base_affine'] = img.header.get_base_affine()
 
         results["bvals"] = bvals
         results["bvecs"] = bvecs
