@@ -235,8 +235,8 @@ if len(results['errors']) == 0:
             results['meta']['nifti_headers'][key] = value
         results['meta']['nifti_headers']['base_affine'] = img.header.get_base_affine()
 
-        results["bvals"] = bvals
-        results["bvecs"] = bvecs
+        results['meta']["bvals"] = bvals
+        results['meta']["bvecs"] = bvecs
 
         dimX = img.header["pixdim"][1]
         dimY = img.header["pixdim"][2]
