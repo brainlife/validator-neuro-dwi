@@ -128,9 +128,9 @@ def generate_sample(slice1, slice2):
     image2_annotated = Image.merge('RGB', (image2_and_neg, image2, image2))
 
     draw1 = ImageDraw.Draw(image1_annotated)
-    draw1.text((10, 10), "Should see features in /") 
+    #draw1.text((10, 10), "Should see features in /") 
     draw2 = ImageDraw.Draw(image2_annotated)
-    draw2.text((10, 10), "Should see features in \\") 
+    #draw2.text((10, 10), "Should see features in \\") 
 
     return (image1_annotated.convert('RGB'), image2_annotated.convert('RGB'))
 
