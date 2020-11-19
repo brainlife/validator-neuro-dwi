@@ -57,7 +57,7 @@ def most_common(bvals):
     round_bvals = []
     for bval in bvals:
         round_bvals.append(round(bval, -2))
-    return max(set(round_bvals), key=bvals.count)
+    return max(set(round_bvals), key=round_bvals.count)
 
 #the heart of bvecs/bvals detection
 def sum_diag(img, shift):
