@@ -5,5 +5,5 @@
 
 set -e
 
-SINGULARITYENV_PYTHONNOUSERSITE=true singularity exec -e docker://brainlife/dipy:1.1.1 ./validate.py
+singularity exec -e docker://brainlife/dipy:1.1.1 ./validate.py
 
