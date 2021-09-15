@@ -274,7 +274,10 @@ if len(results['errors']) == 0:
         # check dimensions
         dims = img.header['dim'][0]
         if dims != 4:
-            error("DWI should be 4D but has " + str(dims))
+            if len(bvals) == 1 and len(bvecs) == 1:
+                warning("DWI is 3D but bvecs/bvals only has 1.. assuming it to be b0")
+            else:
+                error("DWI should be 4D but has " + str(dims))
 
         # check affine
         check_affine(img.header.get_base_affine())
